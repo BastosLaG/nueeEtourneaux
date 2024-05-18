@@ -11,8 +11,9 @@
 #include <GL4D/gl4dg.h>
 
 #define HAUTEUR_SEUIL 7.0f
-#define K_RESSORT 0.5f // Constante de raideur du ressort
+#define K_RESSORT 1.5f // Constante de raideur du ressort
 #define NUM_NEIGHBORS 6 // Nombre de voisins les plus proches
+#define DAMPING 0.99f // Facteur d'amortissement pour stabiliser le mouvement
 
 /*!\typedef structure pour mobile */
 typedef struct mobile_t mobile_t;
@@ -62,9 +63,9 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].x = gl4dmSURand() * _width - _mobile[i].r;
     _mobile[i].z = gl4dmSURand() * _depth - _mobile[i].r;
     _mobile[i].y = _depth;
-    _mobile[i].vx = 3.0f * gl4dmSURand(); 
-    _mobile[i].vy = 3.0f * gl4dmURand(); 
-    _mobile[i].vz = 3.0f * gl4dmSURand();
+    _mobile[i].vx = 1.0f; 
+    _mobile[i].vy = 1.0f; 
+    _mobile[i].vz = 1.0f;
     _mobile[i].color[0] = gl4dmURand();
     _mobile[i].color[1] = gl4dmURand();
     _mobile[i].color[2] = gl4dmURand();
@@ -183,6 +184,11 @@ void mobileMove(void) {
       }
     }
 
+    // Appliquer un facteur d'amortissement léger pour éviter l'augmentation exponentielle de la vitesse
+    _mobile[i].vx *= DAMPING;
+    _mobile[i].vy *= DAMPING;
+    _mobile[i].vz *= DAMPING;
+
     // Appliquer les vitesses à la position du mobile
     _mobile[i].x += _mobile[i].vx * dt;
     _mobile[i].y += _mobile[i].vy * dt;
@@ -208,6 +214,8 @@ void mobileMove(void) {
       if(_mobile[i].vy < 0) _mobile[i].vy = -_mobile[i].vy;
       _mobile[i].y -= d - EPSILON;
       _mobile[i].y_direction_inversee = GL_FALSE;
+      // Appliquer un amortissement supplémentaire sur l'axe y
+      _mobile[i].vy *= DAMPING;
       frottements(i, 0.1f, 0.0f, 0.1f);
     }
 
@@ -216,10 +224,13 @@ void mobileMove(void) {
       if(_mobile[i].vy > 0) _mobile[i].vy = -_mobile[i].vy;
       _mobile[i].y -= d - EPSILON;
       _mobile[i].y_direction_inversee = GL_FALSE;
+      // Appliquer un amortissement supplémentaire sur l'axe y
+      _mobile[i].vy *= DAMPING;
       frottements(i, 0.1f, 0.0f, 0.1f);
     }
   }
 }
+
 
 void mobileDraw(GLuint obj) {
   int i;
