@@ -1,26 +1,19 @@
-/*!\file mobile.h
- *
- * \brief Bibliothèque de gestion de mobiles
- * \author Farès BELHADJ, amsi@ai.univ-paris8.fr 
- * \date March 10 2017
- */
 #ifndef MOBILE_H
-
 #define MOBILE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
+#include <GL4D/gl4du.h>
+#include <GL4D/gl4dg.h>
 
-  extern void mobileInit(int n, GLfloat width, GLfloat height);
-  extern void mobileSetFreeze(GLuint id, GLboolean freeze);
-  extern void mobileGetCoords(GLuint id, GLfloat * coords);
-  extern void mobileSetCoords(GLuint id, GLfloat * coords);
-  extern void mobileMove(void);
-  extern void mobileDraw(GLuint obj);
+#define HAUTEUR_SEUIL 7.0f
 
-#ifdef __cplusplus
-}
-#endif
-#endif
+void mobileInit(int n, GLfloat width, GLfloat depth);
+void mobileMove(void);
+void mobileDraw(GLuint obj);
+void mobileSetFreeze(GLuint id, GLboolean freeze);
+void mobileGetCoords(GLuint id, GLfloat * coords);
+void mobileSetCoords(GLuint id, GLfloat * coords);
+
+extern GLfloat _plan_s;
+
+#endif // MOBILE_H
+

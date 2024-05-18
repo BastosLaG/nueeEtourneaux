@@ -1,9 +1,4 @@
-/*!\file window.c
- * \brief géométries lumière diffuse et transformations de base en
- * GL4Dummies + simulation de mobiles et gestion du picking des objets
- * + ombre portée utilisant le shadow-mapping
- * \author Farès BELHADJ, amsi@ai.univ-paris8.fr
- * \date March 10 2017 */
+//windows.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -11,14 +6,15 @@
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4duw_SDL2.h>
 #include "mobile.h"
-/* Prototypes des fonctions statiques contenues dans ce fichier C */
+#include "predateur.h"
+
 static void init(void);
 static void mouse(int button, int state, int x, int y);
 static void motion(int x, int y);
 static void draw(void);
 static void quit(void);
 /*!\brief dimensions de la fenêtre */
-static int _windowWidth = 800, _windowHeight = 600;
+static int _windowWidth = 1280, _windowHeight = 720;
 /*!\brief identifiant du programme de coloriage GLSL */
 static GLuint _shPID = 0;
 /*!\brief identifiant du programme shadow map GLSL */
@@ -26,7 +22,7 @@ static GLuint _smPID = 0;
 /*!\brief quelques objets géométriques */
 static GLuint _sphere = 0, _quad = 0;
 /*!\brief scale du plan */
-static GLfloat _plan_s = 5.0f;
+GLfloat _plan_s = 5.0f;
 /*!\brief Framebuffer Object */
 static GLuint _fbo = 0;
 /*!\brief Texture recevant la couleur */
@@ -88,6 +84,7 @@ static void init(void) {
   _sphere = gl4dgGenSpheref(30, 30);
   _quad = gl4dgGenQuadf();
   mobileInit(_nb_mobiles, _plan_s, _plan_s);
+  predatorInit(_plan_s, HAUTEUR_SEUIL, _plan_s); // Initialisation du prédateur
 
   /* Création et paramétrage de la Texture de shadow map */
   glGenTextures(1, &_smTex);
@@ -123,6 +120,7 @@ static void init(void) {
   _pixels = malloc(_windowWidth * _windowHeight * sizeof *_pixels);
   assert(_pixels);
 }
+
 /*!\brief call-back au click (tous les boutons avec state à down (1) ou up (0)) */
 static void mouse(int button, int state, int x, int y) {
   if(button == GL4D_BUTTON_LEFT) {
@@ -237,7 +235,9 @@ static inline void scene(GLboolean sm) {
   gl4dgDraw(_quad);
   gl4duSendMatrices();
   mobileDraw(_sphere);
+  predatorDraw(_sphere); // Dessiner le prédateur
 }
+
 
 /*!\brief dessine dans le contexte OpenGL actif. */
 static void draw(void) {

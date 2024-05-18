@@ -22,7 +22,7 @@ PROGNAME = demo
 VERSION = 1.0
 distdir = $(PROGNAME)-$(VERSION)
 HEADERS = mobile.h
-SOURCES = window.c mobile.c
+SOURCES = window.c mobile.c predateur.c
 OBJ = $(SOURCES:.c=.o)
 DOXYFILE = documentation/Doxyfile
 EXTRAFILES = COPYING $(wildcard shaders/*.?s)

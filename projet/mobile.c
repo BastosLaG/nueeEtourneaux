@@ -1,51 +1,48 @@
-/*!\file mobile.c
- *
- * \brief Bibliothèque de gestion de mobiles
- * \author Farès BELHADJ, amsi@ai.univ-paris8.fr 
- * \date March 10 2017
- */
+//mobile.c
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
-
+#include <stdio.h>
+#include "predateur.h"
+extern GLfloat _plan_s;
 #define HAUTEUR_SEUIL 7.0f
+#define EPSILON 0.00001f
 #define K_RESSORT 1.5f // Constante de raideur du ressort
+#define MAX_FORCE 0.1f // Force maximale pour limiter l'accélération
 #define NUM_NEIGHBORS 6 // Nombre de voisins les plus proches
 #define DAMPING 0.99f // Facteur d'amortissement pour stabiliser le mouvement
+#define ALIGNMENT_WEIGHT 0.5f // Poids pour l'alignement
+#define COHESION_WEIGHT 1.0f // Poids pour la cohésion
+#define SEPARATION_WEIGHT 1.0f // Poids pour la séparation
+#define AVOIDANCE_WEIGHT 1.5f // Poids pour éviter les murs
+#define TARGET_WEIGHT 0.05f // Poids pour la direction cible
+#define VELOCITY_LIMIT 3.0f // Limite de la vitesse
+#define TARGET_VELOCITY 2.0f // Vitesse cible
+#define REPULSION_MULTIPLIER 2.0f
 
-/*!\typedef structure pour mobile */
 typedef struct mobile_t mobile_t;
 struct mobile_t {
   GLuint id;
-
-  // set pos
   GLfloat x, y, z, r;
-  
-  // set velocities
   GLfloat vx, vy, vz;
-  
-  // set warning predator
   GLboolean enAlerte;
-  
-  // set color
   GLfloat color[4];
-  
-  // set bonus setting
   GLboolean freeze;
   GLboolean y_direction_inversee;
-
+  GLfloat targetX, targetY, targetZ; // Direction cible
 };
 
 static mobile_t * _mobile = NULL;
 static int _nb_mobiles = 0;
 static GLfloat _width = 1, _depth = 1;
-// static GLfloat _gravity[3] = {0, -9.8 * 3.0, 0};
 
 static void quit(void);
 static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz);
 static double get_dt(void);
+static void applyBoidsRules(int i);
+static void updateTargetDirection(int i);
 
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
@@ -63,19 +60,20 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].x = gl4dmSURand() * _width - _mobile[i].r;
     _mobile[i].z = gl4dmSURand() * _depth - _mobile[i].r;
     _mobile[i].y = _depth;
-    _mobile[i].vx = 1.0f; 
-    _mobile[i].vy = 1.0f; 
-    _mobile[i].vz = 1.0f;
+    _mobile[i].vx = 3.0f * (gl4dmSURand() - 0.5f);
+    _mobile[i].vy = 3.0f * (gl4dmSURand() - 0.5f);
+    _mobile[i].vz = 3.0f * (gl4dmSURand() - 0.5f);
     _mobile[i].color[0] = gl4dmURand();
     _mobile[i].color[1] = gl4dmURand();
     _mobile[i].color[2] = gl4dmURand();
     _mobile[i].color[3] = 1.0f;
     _mobile[i].freeze = GL_FALSE;
     _mobile[i].y_direction_inversee = GL_FALSE;
+    updateTargetDirection(i); // Initialiser la direction cible
   }
+  predatorInit(_width, HAUTEUR_SEUIL, _depth); // Initialiser le prédateur
 }
 
-#define EPSILON 0.00001f
 
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
   _mobile[id].freeze = freeze;
@@ -99,8 +97,7 @@ void attraction(GLuint id, GLfloat * coords) {
   GLfloat dz = coords[2] - _mobile[id].z;
   GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
   if(d > EPSILON) {
-    // Force de rappel du ressort
-    GLfloat F = -K_RESSORT * (d - _mobile[id].r); // Distance initiale d'équilibre peut être _mobile[id].r
+    GLfloat F = -K_RESSORT * (d - _mobile[id].r);
     dx /= d; dy /= d; dz /= d;
     _mobile[id].vx += F * dx;
     _mobile[id].vy += F * dy;
@@ -114,8 +111,7 @@ void repulsion(GLuint id, GLfloat * coords) {
   GLfloat dz = coords[2] - _mobile[id].z;
   GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
   if(d > EPSILON) {
-    // Force de rappel du ressort
-    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Distance initiale d'équilibre peut être _mobile[id].r
+    GLfloat F = K_RESSORT * REPULSION_MULTIPLIER * (d - _mobile[id].r); 
     dx /= d; dy /= d; dz /= d;
     _mobile[id].vx -= F * dx;
     _mobile[id].vy -= F * dy;
@@ -135,8 +131,8 @@ void applySpringForce(GLuint id, GLuint neighborId) {
   GLfloat dz = _mobile[neighborId].z - _mobile[id].z;
   GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
   if(d > EPSILON) {
-    // Force de rappel du ressort
-    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Distance initiale d'équilibre peut être _mobile[id].r
+    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Force de rappel proportionnelle
+    if (F > MAX_FORCE) F = MAX_FORCE; // Limiter la force de rappel
     dx /= d; dy /= d; dz /= d;
     _mobile[id].vx += F * dx;
     _mobile[id].vy += F * dy;
@@ -145,43 +141,38 @@ void applySpringForce(GLuint id, GLuint neighborId) {
 }
 
 void mobileMove(void) {
-  int i, j;
+  int i;
   GLfloat dt = get_dt(), d;
   
+  predatorMove(_plan_s, HAUTEUR_SEUIL, _plan_s); // Déplacer le prédateur
+
   for(i = 0; i < _nb_mobiles; i++) {
     if(_mobile[i].freeze) continue;
 
-    // Trouver les six voisins les plus proches
-    struct neighbor {
-      int id;
-      GLfloat dist;
-    } neighbors[NUM_NEIGHBORS];
-
-    for(j = 0; j < NUM_NEIGHBORS; j++) {
-      neighbors[j].id = -1;
-      neighbors[j].dist = FLT_MAX;
+    // Mettre à jour la direction cible périodiquement
+    if(rand() % 100 < 5) { // Par exemple, 5% de chance de mettre à jour la direction à chaque itération
+      updateTargetDirection(i);
     }
 
-    for(j = 0; j < _nb_mobiles; j++) {
-      if(i == j) continue;
-      d = distance(_mobile[i], _mobile[j]);
-      if(d < neighbors[NUM_NEIGHBORS - 1].dist) {
-        neighbors[NUM_NEIGHBORS - 1].id = j;
-        neighbors[NUM_NEIGHBORS - 1].dist = d;
-        // Trier les voisins par distance
-        for(int k = NUM_NEIGHBORS - 1; k > 0 && neighbors[k].dist < neighbors[k - 1].dist; k--) {
-          struct neighbor tmp = neighbors[k];
-          neighbors[k] = neighbors[k - 1];
-          neighbors[k - 1] = tmp;
-        }
-      }
+    // Appliquer les règles de Boids pour chaque mobile
+    applyBoidsRules(i);
+
+    // Appliquer la direction cible
+    _mobile[i].vx += (_mobile[i].targetX - _mobile[i].x) * TARGET_WEIGHT;
+    _mobile[i].vy += (_mobile[i].targetY - _mobile[i].y) * TARGET_WEIGHT;
+    _mobile[i].vz += (_mobile[i].targetZ - _mobile[i].z) * TARGET_WEIGHT;
+
+    // Appliquer une force de levée pour éviter de rester bloqué en bas
+    if (_mobile[i].y < _mobile[i].r * 2) {
+      _mobile[i].vy += 0.5f; // Augmenter la force de levée
     }
 
-    // Appliquer les forces des ressorts des voisins les plus proches
-    for(j = 0; j < NUM_NEIGHBORS; j++) {
-      if(neighbors[j].id != -1) {
-        applySpringForce(i, neighbors[j].id);
-      }
+    // Ajuster la vitesse pour être constante
+    GLfloat speed = sqrt(_mobile[i].vx * _mobile[i].vx + _mobile[i].vy * _mobile[i].vy + _mobile[i].vz * _mobile[i].vz);
+    if (speed > EPSILON) {
+      _mobile[i].vx = (_mobile[i].vx / speed) * TARGET_VELOCITY;
+      _mobile[i].vy = (_mobile[i].vy / speed) * TARGET_VELOCITY;
+      _mobile[i].vz = (_mobile[i].vz / speed) * TARGET_VELOCITY;
     }
 
     // Appliquer un facteur d'amortissement léger pour éviter l'augmentation exponentielle de la vitesse
@@ -277,3 +268,87 @@ static double get_dt(void) {
   return dt;
 }
 
+// Fonction pour appliquer les règles de Boids
+static void applyBoidsRules(int i) {
+  int j, count = 0;
+  GLfloat avgVx = 0, avgVy = 0, avgVz = 0;
+  GLfloat centerX = 0, centerY = 0, centerZ = 0;
+  GLfloat separationX = 0, separationY = 0, separationZ = 0;
+  GLfloat d;
+  GLfloat influenceDistance = _mobile[i].r * 20; // Augmenter la distance d'influence
+
+  for(j = 0; j < _nb_mobiles; j++) {
+    if(i == j) continue;
+    d = distance(_mobile[i], _mobile[j]);
+    if(d < influenceDistance) { // Utiliser la nouvelle distance d'influence
+      // Règle de cohésion
+      centerX += _mobile[j].x;
+      centerY += _mobile[j].y;
+      centerZ += _mobile[j].z;
+
+      // Règle d'alignement
+      avgVx += _mobile[j].vx;
+      avgVy += _mobile[j].vy;
+      avgVz += _mobile[j].vz;
+
+      // Règle de séparation
+      if(d < _mobile[i].r * 3) { // Augmenter la distance minimale acceptable pour la séparation
+        separationX += _mobile[i].x - _mobile[j].x;
+        separationY += _mobile[i].y - _mobile[j].y;
+        separationZ += _mobile[i].z - _mobile[j].z;
+      }
+
+      count++;
+    }
+  }
+
+  if(count > 0) {
+    // Calculer la cohésion (diriger vers le centre des voisins)
+    centerX /= count;
+    centerY /= count;
+    centerZ /= count;
+    _mobile[i].vx += (centerX - _mobile[i].x) * (COHESION_WEIGHT / 2); // Réduire la force de cohésion
+    _mobile[i].vy += (centerY - _mobile[i].y) * (COHESION_WEIGHT / 2);
+    _mobile[i].vz += (centerZ - _mobile[i].z) * (COHESION_WEIGHT / 2);
+
+    // Calculer l'alignement (diriger vers la vitesse moyenne des voisins)
+    avgVx /= count;
+    avgVy /= count;
+    avgVz /= count;
+    _mobile[i].vx += (avgVx - _mobile[i].vx) * ALIGNMENT_WEIGHT;
+    _mobile[i].vy += (avgVy - _mobile[i].vy) * ALIGNMENT_WEIGHT;
+    _mobile[i].vz += (avgVz - _mobile[i].vz) * ALIGNMENT_WEIGHT;
+
+    // Appliquer la séparation (éviter les collisions)
+    _mobile[i].vx += separationX * (SEPARATION_WEIGHT * 2); // Augmenter la force de séparation
+    _mobile[i].vy += separationY * (SEPARATION_WEIGHT * 2);
+    _mobile[i].vz += separationZ * (SEPARATION_WEIGHT * 2);
+  }
+
+  // Éviter les murs
+  if(_mobile[i].x < -_width + _mobile[i].r) {
+    _mobile[i].vx += AVOIDANCE_WEIGHT;
+  } else if(_mobile[i].x > _width - _mobile[i].r) {
+    _mobile[i].vx -= AVOIDANCE_WEIGHT;
+  }
+
+  if(_mobile[i].y < _mobile[i].r) {
+    _mobile[i].vy += AVOIDANCE_WEIGHT;
+  } else if(_mobile[i].y > HAUTEUR_SEUIL - _mobile[i].r) {
+    _mobile[i].vy -= AVOIDANCE_WEIGHT;
+  }
+
+  if(_mobile[i].z < -_depth + _mobile[i].r) {
+    _mobile[i].vz += AVOIDANCE_WEIGHT;
+  } else if(_mobile[i].z > _depth - _mobile[i].r) {
+    _mobile[i].vz -= AVOIDANCE_WEIGHT;
+  }
+}
+
+
+// Fonction pour mettre à jour la direction cible aléatoire
+static void updateTargetDirection(int i) {
+  _mobile[i].targetX = gl4dmSURand() * _width - _mobile[i].r;
+  _mobile[i].targetY = gl4dmSURand() * (HAUTEUR_SEUIL - 2 * _mobile[i].r) + _mobile[i].r; // Assurez-vous que la direction cible reste dans la zone de vol
+  _mobile[i].targetZ = gl4dmSURand() * _depth - _mobile[i].r;
+}
