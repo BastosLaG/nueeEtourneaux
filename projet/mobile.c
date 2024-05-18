@@ -1,4 +1,3 @@
-//mobile.c
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
@@ -6,6 +5,7 @@
 #include <GL4D/gl4dg.h>
 #include <stdio.h>
 #include "predateur.h"
+
 extern GLfloat _plan_s;
 #define HAUTEUR_SEUIL 7.0f
 #define EPSILON 0.00001f
@@ -21,9 +21,9 @@ extern GLfloat _plan_s;
 #define VELOCITY_LIMIT 3.0f // Limite de la vitesse
 #define TARGET_VELOCITY 2.0f // Vitesse cible
 #define REPULSION_MULTIPLIER 2.0f
+#define PREDATOR_AVOIDANCE_WEIGHT 2.0f // Poids pour éviter le prédateur
 
-typedef struct mobile_t mobile_t;
-struct mobile_t {
+typedef struct mobile_t {
   GLuint id;
   GLfloat x, y, z, r;
   GLfloat vx, vy, vz;
@@ -32,7 +32,7 @@ struct mobile_t {
   GLboolean freeze;
   GLboolean y_direction_inversee;
   GLfloat targetX, targetY, targetZ; // Direction cible
-};
+} mobile_t;
 
 static mobile_t * _mobile = NULL;
 static int _nb_mobiles = 0;
@@ -43,6 +43,7 @@ static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz);
 static double get_dt(void);
 static void applyBoidsRules(int i);
 static void updateTargetDirection(int i);
+static void avoidPredator(int i);
 
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
@@ -73,7 +74,6 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
   }
   predatorInit(_width, HAUTEUR_SEUIL, _depth); // Initialiser le prédateur
 }
-
 
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
   _mobile[id].freeze = freeze;
@@ -157,6 +157,9 @@ void mobileMove(void) {
     // Appliquer les règles de Boids pour chaque mobile
     applyBoidsRules(i);
 
+    // Éviter le prédateur
+    avoidPredator(i);
+
     // Appliquer la direction cible
     _mobile[i].vx += (_mobile[i].targetX - _mobile[i].x) * TARGET_WEIGHT;
     _mobile[i].vy += (_mobile[i].targetY - _mobile[i].y) * TARGET_WEIGHT;
@@ -221,7 +224,6 @@ void mobileMove(void) {
     }
   }
 }
-
 
 void mobileDraw(GLuint obj) {
   int i;
@@ -345,6 +347,17 @@ static void applyBoidsRules(int i) {
   }
 }
 
+static void avoidPredator(int i) {
+  GLfloat dx = _predator.x - _mobile[i].x;
+  GLfloat dy = _predator.y - _mobile[i].y;
+  GLfloat dz = _predator.z - _mobile[i].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d < _mobile[i].r * 10) { // Si le prédateur est à moins de 10 fois le rayon du mobile
+    _mobile[i].vx -= dx / d * PREDATOR_AVOIDANCE_WEIGHT;
+    _mobile[i].vy -= dy / d * PREDATOR_AVOIDANCE_WEIGHT;
+    _mobile[i].vz -= dz / d * PREDATOR_AVOIDANCE_WEIGHT;
+  }
+}
 
 // Fonction pour mettre à jour la direction cible aléatoire
 static void updateTargetDirection(int i) {

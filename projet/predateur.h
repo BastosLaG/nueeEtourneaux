@@ -1,4 +1,3 @@
-// predateur.h
 #ifndef PREDATEUR_H
 #define PREDATEUR_H
 
@@ -6,7 +5,7 @@
 #include <GL4D/gl4dg.h>
 
 // Structure du prédateur
-typedef struct predator_t {
+typedef struct {
   GLfloat x, y, z, r;
   GLfloat vx, vy, vz;
   GLfloat color[4];
