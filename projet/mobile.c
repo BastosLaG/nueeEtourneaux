@@ -6,10 +6,13 @@
  */
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
 
 #define HAUTEUR_SEUIL 7.0f
+#define K_RESSORT 0.5f // Constante de raideur du ressort
+#define NUM_NEIGHBORS 6 // Nombre de voisins les plus proches
 
 /*!\typedef structure pour mobile */
 typedef struct mobile_t mobile_t;
@@ -89,38 +92,118 @@ void mobileSetCoords(GLuint id, GLfloat * coords) {
   _mobile[id].z = coords[2];
 }
 
+void attraction(GLuint id, GLfloat * coords) {
+  GLfloat dx = coords[0] - _mobile[id].x;
+  GLfloat dy = coords[1] - _mobile[id].y;
+  GLfloat dz = coords[2] - _mobile[id].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d > EPSILON) {
+    // Force de rappel du ressort
+    GLfloat F = -K_RESSORT * (d - _mobile[id].r); // Distance initiale d'équilibre peut être _mobile[id].r
+    dx /= d; dy /= d; dz /= d;
+    _mobile[id].vx += F * dx;
+    _mobile[id].vy += F * dy;
+    _mobile[id].vz += F * dz;
+  }
+}
+
+void repulsion(GLuint id, GLfloat * coords) {
+  GLfloat dx = coords[0] - _mobile[id].x;
+  GLfloat dy = coords[1] - _mobile[id].y;
+  GLfloat dz = coords[2] - _mobile[id].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d > EPSILON) {
+    // Force de rappel du ressort
+    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Distance initiale d'équilibre peut être _mobile[id].r
+    dx /= d; dy /= d; dz /= d;
+    _mobile[id].vx -= F * dx;
+    _mobile[id].vy -= F * dy;
+    _mobile[id].vz -= F * dz;
+  }
+}
+
+static GLfloat distance(mobile_t a, mobile_t b) {
+  return sqrt((a.x - b.x) * (a.x - b.x) + 
+              (a.y - b.y) * (a.y - b.y) + 
+              (a.z - b.z) * (a.z - b.z));
+}
+
+void applySpringForce(GLuint id, GLuint neighborId) {
+  GLfloat dx = _mobile[neighborId].x - _mobile[id].x;
+  GLfloat dy = _mobile[neighborId].y - _mobile[id].y;
+  GLfloat dz = _mobile[neighborId].z - _mobile[id].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d > EPSILON) {
+    // Force de rappel du ressort
+    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Distance initiale d'équilibre peut être _mobile[id].r
+    dx /= d; dy /= d; dz /= d;
+    _mobile[id].vx += F * dx;
+    _mobile[id].vy += F * dy;
+    _mobile[id].vz += F * dz;
+  }
+}
+
 void mobileMove(void) {
-  int i;
+  int i, j;
   GLfloat dt = get_dt(), d;
+  
   for(i = 0; i < _nb_mobiles; i++) {
     if(_mobile[i].freeze) continue;
 
-    // apply velocities to mobile position
+    // Trouver les six voisins les plus proches
+    struct neighbor {
+      int id;
+      GLfloat dist;
+    } neighbors[NUM_NEIGHBORS];
+
+    for(j = 0; j < NUM_NEIGHBORS; j++) {
+      neighbors[j].id = -1;
+      neighbors[j].dist = FLT_MAX;
+    }
+
+    for(j = 0; j < _nb_mobiles; j++) {
+      if(i == j) continue;
+      d = distance(_mobile[i], _mobile[j]);
+      if(d < neighbors[NUM_NEIGHBORS - 1].dist) {
+        neighbors[NUM_NEIGHBORS - 1].id = j;
+        neighbors[NUM_NEIGHBORS - 1].dist = d;
+        // Trier les voisins par distance
+        for(int k = NUM_NEIGHBORS - 1; k > 0 && neighbors[k].dist < neighbors[k - 1].dist; k--) {
+          struct neighbor tmp = neighbors[k];
+          neighbors[k] = neighbors[k - 1];
+          neighbors[k - 1] = tmp;
+        }
+      }
+    }
+
+    // Appliquer les forces des ressorts des voisins les plus proches
+    for(j = 0; j < NUM_NEIGHBORS; j++) {
+      if(neighbors[j].id != -1) {
+        applySpringForce(i, neighbors[j].id);
+      }
+    }
+
+    // Appliquer les vitesses à la position du mobile
     _mobile[i].x += _mobile[i].vx * dt;
     _mobile[i].y += _mobile[i].vy * dt;
     _mobile[i].z += _mobile[i].vz * dt;
 
-    // si le toit est toucher et que la direction y n'est pas inversé
-    if (_mobile[i].y > HAUTEUR_SEUIL && !_mobile[i].y_direction_inversee) {
-      _mobile[i].vy = -_mobile[i].vy;
-      _mobile[i].y_direction_inversee = GL_TRUE;
-    }
-
-    
-    // voués à disparaitre pour un vole fluide de nos étourneaux 
-    // si le bord de la sphere touche le bord de la boite de coté Epsilon sur l'intervale x
-    if( (d = _mobile[i].x - _mobile[i].r + _width) <= EPSILON || (d = _mobile[i].x + _mobile[i].r - _width) >= -EPSILON ) {
+    // Gérer les collisions avec les bords de la boîte
+    if( (d = _mobile[i].x - _mobile[i].r + _width) <= EPSILON || 
+        (d = _mobile[i].x + _mobile[i].r - _width) >= -EPSILON ) {
       if(d * _mobile[i].vx > 0) _mobile[i].vx = -_mobile[i].vx;
       _mobile[i].x -= d - EPSILON;
       frottements(i, 0.1f, 0.0f, 0.1f);
     }
-    // si le bord de la sphere touche le bord de la boite de coté Epsilon sur l'intervale z 
-    if( (d = _mobile[i].z - _mobile[i].r + _depth) <= EPSILON || (d = _mobile[i].z + _mobile[i].r - _depth) >= -EPSILON ) {
+
+    if( (d = _mobile[i].z - _mobile[i].r + _depth) <= EPSILON || 
+        (d = _mobile[i].z + _mobile[i].r - _depth) >= -EPSILON ) {
       if(d * _mobile[i].vz > 0) _mobile[i].vz = -_mobile[i].vz;
       _mobile[i].z -= d - EPSILON;
       frottements(i, 0.1f, 0.0f, 0.1f);
     }
-    // si la sphere touche le bas de la boite
+
+    // Si le bord de la sphère touche le bas de la boîte
     if( (d = _mobile[i].y - _mobile[i].r) <= EPSILON ) {
       if(_mobile[i].vy < 0) _mobile[i].vy = -_mobile[i].vy;
       _mobile[i].y -= d - EPSILON;
@@ -128,8 +211,13 @@ void mobileMove(void) {
       frottements(i, 0.1f, 0.0f, 0.1f);
     }
 
-
-
+    // Si le bord de la sphère touche le haut de la boîte
+    if( (d = _mobile[i].y + _mobile[i].r - HAUTEUR_SEUIL) >= -EPSILON ) {
+      if(_mobile[i].vy > 0) _mobile[i].vy = -_mobile[i].vy;
+      _mobile[i].y -= d - EPSILON;
+      _mobile[i].y_direction_inversee = GL_FALSE;
+      frottements(i, 0.1f, 0.0f, 0.1f);
+    }
   }
 }
 
