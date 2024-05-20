@@ -237,7 +237,6 @@ static inline void scene(GLboolean sm) {
   predatorDraw(_sphere); // Dessiner le prédateur
 }
 
-
 /*!\brief dessine dans le contexte OpenGL actif. */
 static void draw(void) {
   // static float aa = 0;

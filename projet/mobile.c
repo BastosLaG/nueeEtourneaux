@@ -7,6 +7,17 @@
 #include "predateur.h"
 #include "mobile.h"
 
+static mobile_t * _mobile = NULL;
+static int _nb_mobiles = 0;
+static GLfloat _width = 1, _depth = 1;
+
+static void quit(void);
+static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz);
+static double get_dt(void);
+static void applyBoidsRules(int i);
+static void updateTargetDirection(int i);
+static void avoidPredator(int i);
+
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
   _width = width; _depth = depth;
@@ -36,64 +47,23 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
   }
   predatorInit(_width, HAUTEUR_SEUIL, _depth); // Initialiser le prédateur
 }
+
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
   _mobile[id].freeze = freeze;
 }
+
 void mobileGetCoords(GLuint id, GLfloat * coords) {
   coords[0] = _mobile[id].x;
   coords[1] = _mobile[id].y;
   coords[2] = _mobile[id].z;
 }
+
 void mobileSetCoords(GLuint id, GLfloat * coords) {
   _mobile[id].x = coords[0];
   _mobile[id].y = coords[1];
   _mobile[id].z = coords[2];
 }
-void attraction(GLuint id, GLfloat * coords) {
-  GLfloat dx = coords[0] - _mobile[id].x;
-  GLfloat dy = coords[1] - _mobile[id].y;
-  GLfloat dz = coords[2] - _mobile[id].z;
-  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
-  if(d > EPSILON) {
-    GLfloat F = -K_RESSORT * (d - _mobile[id].r);
-    dx /= d; dy /= d; dz /= d;
-    _mobile[id].vx += F * dx;
-    _mobile[id].vy += F * dy;
-    _mobile[id].vz += F * dz;
-  }
-}
-void repulsion(GLuint id, GLfloat * coords) {
-  GLfloat dx = coords[0] - _mobile[id].x;
-  GLfloat dy = coords[1] - _mobile[id].y;
-  GLfloat dz = coords[2] - _mobile[id].z;
-  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
-  if(d > EPSILON) {
-    GLfloat F = K_RESSORT * REPULSION_MULTIPLIER * (d - _mobile[id].r); 
-    dx /= d; dy /= d; dz /= d;
-    _mobile[id].vx -= F * dx;
-    _mobile[id].vy -= F * dy;
-    _mobile[id].vz -= F * dz;
-  }
-}
-GLfloat distance(mobile_t a, mobile_t b) {
-  return sqrt((a.x - b.x) * (a.x - b.x) + 
-              (a.y - b.y) * (a.y - b.y) + 
-              (a.z - b.z) * (a.z - b.z));
-}
-void applySpringForce(GLuint id, GLuint neighborId) {
-  GLfloat dx = _mobile[neighborId].x - _mobile[id].x;
-  GLfloat dy = _mobile[neighborId].y - _mobile[id].y;
-  GLfloat dz = _mobile[neighborId].z - _mobile[id].z;
-  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
-  if(d > EPSILON) {
-    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Force de rappel proportionnelle
-    if (F > MAX_FORCE) F = MAX_FORCE; // Limiter la force de rappel
-    dx /= d; dy /= d; dz /= d;
-    _mobile[id].vx += F * dx;
-    _mobile[id].vy += F * dy;
-    _mobile[id].vz += F * dz;
-  }
-}
+
 void mobileMove(void) {
   int i;
   GLfloat dt = get_dt(), d;
@@ -178,6 +148,7 @@ void mobileMove(void) {
     }
   }
 }
+
 void mobileDraw(GLuint obj) {
   int i;
   GLint pId;
@@ -193,6 +164,56 @@ void mobileDraw(GLuint obj) {
     gl4dgDraw(obj);
   }
 }
+
+void attraction(GLuint id, GLfloat * coords) {
+  GLfloat dx = coords[0] - _mobile[id].x;
+  GLfloat dy = coords[1] - _mobile[id].y;
+  GLfloat dz = coords[2] - _mobile[id].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d > EPSILON) {
+    GLfloat F = -K_RESSORT * (d - _mobile[id].r);
+    dx /= d; dy /= d; dz /= d;
+    _mobile[id].vx += F * dx;
+    _mobile[id].vy += F * dy;
+    _mobile[id].vz += F * dz;
+  }
+}
+
+void repulsion(GLuint id, GLfloat * coords) {
+  GLfloat dx = coords[0] - _mobile[id].x;
+  GLfloat dy = coords[1] - _mobile[id].y;
+  GLfloat dz = coords[2] - _mobile[id].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d > EPSILON) {
+    GLfloat F = K_RESSORT * REPULSION_MULTIPLIER * (d - _mobile[id].r); 
+    dx /= d; dy /= d; dz /= d;
+    _mobile[id].vx -= F * dx;
+    _mobile[id].vy -= F * dy;
+    _mobile[id].vz -= F * dz;
+  }
+}
+
+void applySpringForce(GLuint id, GLuint neighborId) {
+  GLfloat dx = _mobile[neighborId].x - _mobile[id].x;
+  GLfloat dy = _mobile[neighborId].y - _mobile[id].y;
+  GLfloat dz = _mobile[neighborId].z - _mobile[id].z;
+  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
+  if(d > EPSILON) {
+    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Force de rappel proportionnelle
+    if (F > MAX_FORCE) F = MAX_FORCE; // Limiter la force de rappel
+    dx /= d; dy /= d; dz /= d;
+    _mobile[id].vx += F * dx;
+    _mobile[id].vy += F * dy;
+    _mobile[id].vz += F * dz;
+  }
+}
+
+static GLfloat distance(mobile_t a, mobile_t b) {
+  return sqrt((a.x - b.x) * (a.x - b.x) + 
+              (a.y - b.y) * (a.y - b.y) + 
+              (a.z - b.z) * (a.z - b.z));
+}
+
 static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz) {
   GLfloat vx = fabs(_mobile[i].vx), vy = fabs(_mobile[i].vy), vz = fabs(_mobile[i].vz);
 
@@ -205,6 +226,7 @@ static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz) {
   if(vz < EPSILON)  _mobile[i].vz = 0;
   else              _mobile[i].vz = (vz - kz * vz) * SIGN(_mobile[i].vz);
 }
+
 static void quit(void) {
   _nb_mobiles = 0;
   if(_mobile) {
@@ -212,6 +234,7 @@ static void quit(void) {
     _mobile = NULL;
   }
 }
+
 static double get_dt(void) {
   static double t0 = 0, t, dt;
   t = gl4dGetElapsedTime();
@@ -219,6 +242,8 @@ static double get_dt(void) {
   t0 = t;
   return dt;
 }
+
+// Fonction pour appliquer les règles de Boids
 static void applyBoidsRules(int i) {
   int j, count = 0;
   GLfloat avgVx = 0, avgVy = 0, avgVz = 0;
@@ -294,6 +319,7 @@ static void applyBoidsRules(int i) {
     _mobile[i].vz -= AVOIDANCE_WEIGHT;
   }
 }
+
 static void avoidPredator(int i) {
   GLfloat dx = _predator.x - _mobile[i].x;
   GLfloat dy = _predator.y - _mobile[i].y;
@@ -305,8 +331,10 @@ static void avoidPredator(int i) {
     _mobile[i].vz -= dz / d * PREDATOR_AVOIDANCE_WEIGHT;
   }
 }
+
+// Fonction pour mettre à jour la direction cible aléatoire
 static void updateTargetDirection(int i) {
   _mobile[i].targetX = gl4dmSURand() * _width - _mobile[i].r;
-  _mobile[i].targetY = gl4dmSURand() * (HAUTEUR_SEUIL - 2 * _mobile[i].r) + _mobile[i].r;
+  _mobile[i].targetY = gl4dmSURand() * (HAUTEUR_SEUIL - 2 * _mobile[i].r) + _mobile[i].r; // Assurez-vous que la direction cible reste dans la zone de vol
   _mobile[i].targetZ = gl4dmSURand() * _depth - _mobile[i].r;
 }

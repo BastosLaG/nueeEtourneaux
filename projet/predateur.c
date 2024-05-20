@@ -4,6 +4,8 @@
 #include <assert.h>
 #include "predateur.h"
 
+predator_t _predator;
+
 void predatorInit(GLfloat width, GLfloat height, GLfloat depth) {
   _predator.r = 0.2f;
   _predator.x = gl4dmSURand() * width - _predator.r;

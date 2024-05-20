@@ -10,7 +10,7 @@ typedef struct {
   GLfloat color[4];
 } predator_t;
 
-static predator_t _predator;
+extern predator_t _predator;
 
 void predatorInit(GLfloat width, GLfloat height, GLfloat depth);
 void predatorMove(GLfloat width, GLfloat height, GLfloat depth);

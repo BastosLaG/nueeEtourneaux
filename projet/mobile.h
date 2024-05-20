@@ -33,28 +33,13 @@ typedef struct mobile_t {
   GLfloat targetX, targetY, targetZ; // Direction cible
 } mobile_t;
 
-static mobile_t * _mobile = NULL;
-static int _nb_mobiles = 0;
-static GLfloat _width = 1, _depth = 1;
-
 void mobileInit(int n, GLfloat width, GLfloat depth);
-void mobileMove(void);
-void mobileDraw(GLuint obj);
 void mobileSetFreeze(GLuint id, GLboolean freeze);
 void mobileGetCoords(GLuint id, GLfloat * coords);
 void mobileSetCoords(GLuint id, GLfloat * coords);
+void mobileMove(void);
+void mobileDraw(GLuint obj);
 void attraction(GLuint id, GLfloat * coords);
 void repulsion(GLuint id, GLfloat * coords);
-GLfloat distance(mobile_t a, mobile_t b);
-void applySpringForce(GLuint id, GLuint neighborId);
-static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz);
-static void quit(void);
-static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz);
-static double get_dt(void);
-static void applyBoidsRules(int i);
-static void updateTargetDirection(int i);
-static void avoidPredator(int i);
-
-extern GLfloat _plan_s;
-
+void applySpringForce(GLuint id, GLuint neighborId); 
 #endif
