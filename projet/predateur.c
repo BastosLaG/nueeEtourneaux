@@ -4,8 +4,6 @@
 #include <assert.h>
 #include "predateur.h"
 
-predator_t _predator;
-
 void predatorInit(GLfloat width, GLfloat height, GLfloat depth) {
   _predator.r = 0.2f;
   _predator.x = gl4dmSURand() * width - _predator.r;
@@ -19,7 +17,6 @@ void predatorInit(GLfloat width, GLfloat height, GLfloat depth) {
   _predator.color[2] = 0.0f;
   _predator.color[3] = 1.0f;
 }
-
 void predatorMove(GLfloat width, GLfloat height, GLfloat depth) {
   _predator.x += _predator.vx;
   _predator.y += _predator.vy;
@@ -69,7 +66,6 @@ void predatorMove(GLfloat width, GLfloat height, GLfloat depth) {
     _predator.vz = (_predator.vz / speed) * maxSpeed;
   }
 }
-
 void predatorDraw(GLuint obj) {
   GLint pId;
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
