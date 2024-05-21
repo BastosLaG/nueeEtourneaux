@@ -83,7 +83,7 @@ static void init(void) {
   _sphere = gl4dgGenSpheref(30, 30);
   _quad = gl4dgGenQuadf();
   mobileInit(_nb_mobiles, _plan_s, _plan_s);
-  predatorInit(_plan_s, HAUTEUR_SEUIL, _plan_s); // Initialisation du prédateur
+  predatorInit(_nb_mobiles, _plan_s, HAUTEUR_SEUIL, _plan_s);
 
   /* Création et paramétrage de la Texture de shadow map */
   glGenTextures(1, &_smTex);

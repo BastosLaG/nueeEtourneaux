@@ -7,7 +7,7 @@
 #include "predateur.h"
 #include "mobile.h"
 
-static mobile_t * _mobile = NULL;
+mobile_t * _mobile = NULL;
 static int _nb_mobiles = 0;
 static GLfloat _width = 1, _depth = 1;
 
@@ -47,7 +47,7 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].y_direction_inversee = GL_FALSE;
     updateTargetDirection(i); // Initialiser la direction cible
   }
-  predatorInit(_width, HAUTEUR_SEUIL, _depth); // Initialiser le prédateur
+  predatorInit(_nb_mobiles,_width, HAUTEUR_SEUIL, _depth); // Initialiser le prédateur
 }
 
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
@@ -70,7 +70,7 @@ void mobileMove(void) {
   int i;
   double dt = get_dt(), d;
   
-  predatorMove(_plan_s, HAUTEUR_SEUIL, _plan_s); // Déplacer le prédateur
+  predatorMove(_plan_s, HAUTEUR_SEUIL, _plan_s);
 
   for(i = 0; i < _nb_mobiles; i++) {
     if(_mobile[i].freeze) continue;
@@ -279,3 +279,4 @@ static void updateTargetDirection(int i) {
   _mobile[i].targetY = gl4dmURand() * (HAUTEUR_SEUIL - (2 * _mobile[i].r)) + _mobile[i].r;
   _mobile[i].targetZ = gl4dmSURand() * _depth - _mobile[i].r;
 }
+
