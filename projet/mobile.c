@@ -89,19 +89,6 @@ void mobileMove(void) {
     _mobile[i].vy += (_mobile[i].targetY - _mobile[i].y) * TARGET_WEIGHT;
     _mobile[i].vz += (_mobile[i].targetZ - _mobile[i].z) * TARGET_WEIGHT;
 
-    // Appliquer une force de levée pour éviter de rester bloqué en bas
-    if (_mobile[i].y < _mobile[i].r * 2) {
-      _mobile[i].vy += 0.5f; // Augmenter la force de levée
-    }
-
-    // Ajuster la vitesse pour être constante
-    GLfloat speed = sqrt(_mobile[i].vx * _mobile[i].vx + _mobile[i].vy * _mobile[i].vy + _mobile[i].vz * _mobile[i].vz);
-    if (speed > EPSILON) {
-      _mobile[i].vx = (_mobile[i].vx / speed) * TARGET_VELOCITY;
-      _mobile[i].vy = (_mobile[i].vy / speed) * TARGET_VELOCITY;
-      _mobile[i].vz = (_mobile[i].vz / speed) * TARGET_VELOCITY;
-    }
-
     // Appliquer un facteur d'amortissement léger pour éviter l'augmentation exponentielle de la vitesse
     _mobile[i].vx *= DAMPING;
     _mobile[i].vy *= DAMPING;
@@ -146,6 +133,7 @@ void mobileMove(void) {
       _mobile[i].vy *= DAMPING;
       frottements(i, 0.1f, 0.0f, 0.1f);
     }
+    printf("target x : %f y : %f z : %f\n", _mobile[i].targetX, _mobile[i].targetY, _mobile[i].targetZ);
   }
 }
 
@@ -299,25 +287,6 @@ static void applyBoidsRules(int i) {
     _mobile[i].vy += separationY * (SEPARATION_WEIGHT * 2);
     _mobile[i].vz += separationZ * (SEPARATION_WEIGHT * 2);
   }
-
-  // Éviter les murs
-  if(_mobile[i].x < -_width + _mobile[i].r) {
-    _mobile[i].vx += AVOIDANCE_WEIGHT;
-  } else if(_mobile[i].x > _width - _mobile[i].r) {
-    _mobile[i].vx -= AVOIDANCE_WEIGHT;
-  }
-
-  if(_mobile[i].y < _mobile[i].r) {
-    _mobile[i].vy += AVOIDANCE_WEIGHT;
-  } else if(_mobile[i].y > HAUTEUR_SEUIL - _mobile[i].r) {
-    _mobile[i].vy -= AVOIDANCE_WEIGHT;
-  }
-
-  if(_mobile[i].z < -_depth + _mobile[i].r) {
-    _mobile[i].vz += AVOIDANCE_WEIGHT;
-  } else if(_mobile[i].z > _depth - _mobile[i].r) {
-    _mobile[i].vz -= AVOIDANCE_WEIGHT;
-  }
 }
 
 static void avoidPredator(int i) {
@@ -329,12 +298,13 @@ static void avoidPredator(int i) {
     _mobile[i].vx -= dx / d * PREDATOR_AVOIDANCE_WEIGHT;
     _mobile[i].vy -= dy / d * PREDATOR_AVOIDANCE_WEIGHT;
     _mobile[i].vz -= dz / d * PREDATOR_AVOIDANCE_WEIGHT;
+    printf("\nBOOOOOO\n\n");
   }
 }
 
 // Fonction pour mettre à jour la direction cible aléatoire
 static void updateTargetDirection(int i) {
   _mobile[i].targetX = gl4dmSURand() * _width - _mobile[i].r;
-  _mobile[i].targetY = gl4dmSURand() * (HAUTEUR_SEUIL - 2 * _mobile[i].r) + _mobile[i].r; // Assurez-vous que la direction cible reste dans la zone de vol
+  _mobile[i].targetY = gl4dmURand() * (HAUTEUR_SEUIL - (2 * _mobile[i].r)) + _mobile[i].r;
   _mobile[i].targetZ = gl4dmSURand() * _depth - _mobile[i].r;
 }
