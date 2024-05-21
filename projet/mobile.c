@@ -105,49 +105,6 @@ void mobileDraw(GLuint obj) {
   }
 }
 
-void attraction(GLuint id, GLfloat * coords) {
-  GLfloat dx = coords[0] - _mobile[id].x;
-  GLfloat dy = coords[1] - _mobile[id].y;
-  GLfloat dz = coords[2] - _mobile[id].z;
-  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
-  if(d > EPSILON) {
-    GLfloat F = -K_RESSORT * (d - _mobile[id].r);
-    dx /= d; dy /= d; dz /= d;
-    _mobile[id].vx += F * dx;
-    _mobile[id].vy += F * dy;
-    _mobile[id].vz += F * dz;
-  }
-}
-
-void repulsion(GLuint id, GLfloat * coords) {
-  GLfloat dx = coords[0] - _mobile[id].x;
-  GLfloat dy = coords[1] - _mobile[id].y;
-  GLfloat dz = coords[2] - _mobile[id].z;
-  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
-  if(d > EPSILON) {
-    GLfloat F = K_RESSORT * REPULSION_MULTIPLIER * (d - _mobile[id].r); 
-    dx /= d; dy /= d; dz /= d;
-    _mobile[id].vx -= F * dx;
-    _mobile[id].vy -= F * dy;
-    _mobile[id].vz -= F * dz;
-  }
-}
-
-void applySpringForce(GLuint id, GLuint neighborId) {
-  GLfloat dx = _mobile[neighborId].x - _mobile[id].x;
-  GLfloat dy = _mobile[neighborId].y - _mobile[id].y;
-  GLfloat dz = _mobile[neighborId].z - _mobile[id].z;
-  GLfloat d = sqrt(dx * dx + dy * dy + dz * dz);
-  if(d > EPSILON) {
-    GLfloat F = K_RESSORT * (d - _mobile[id].r); // Force de rappel proportionnelle
-    if (F > MAX_FORCE) F = MAX_FORCE; // Limiter la force de rappel
-    dx /= d; dy /= d; dz /= d;
-    _mobile[id].vx += F * dx;
-    _mobile[id].vy += F * dy;
-    _mobile[id].vz += F * dz;
-  }
-}
-
 static GLfloat distance(mobile_t a, mobile_t b) {
   return sqrt((a.x - b.x) * (a.x - b.x) + 
               (a.y - b.y) * (a.y - b.y) + 
