@@ -17,7 +17,7 @@ extern GLfloat _plan_s;
 #define SEPARATION_WEIGHT 1.0f // Poids pour la séparation
 #define AVOIDANCE_WEIGHT 1.5f // Poids pour éviter les murs
 #define TARGET_WEIGHT 0.05f // Poids pour la direction cible
-#define VELOCITY_LIMIT 3.0f // Limite de la vitesse
+#define VELOCITY_LIMIT 5.0f // Limite de la vitesse
 #define TARGET_VELOCITY 2.0f // Vitesse cible
 #define REPULSION_MULTIPLIER 2.0f
 #define PREDATOR_AVOIDANCE_WEIGHT 2.0f // Poids pour éviter le prédateur

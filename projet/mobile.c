@@ -17,6 +17,8 @@ static double get_dt(void);
 static void applyBoidsRules(int i);
 static void updateTargetDirection(int i);
 static void avoidPredator(int i);
+static void update_move(int i, float dt);
+static void collision_collback(int i, float d);
 
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
@@ -66,74 +68,24 @@ void mobileSetCoords(GLuint id, GLfloat * coords) {
 
 void mobileMove(void) {
   int i;
-  GLfloat dt = get_dt(), d;
+  double dt = get_dt(), d;
   
   predatorMove(_plan_s, HAUTEUR_SEUIL, _plan_s); // Déplacer le prédateur
 
   for(i = 0; i < _nb_mobiles; i++) {
     if(_mobile[i].freeze) continue;
-
-    // Mettre à jour la direction cible périodiquement
-    if(rand() % 100 < 5) { // Par exemple, 5% de chance de mettre à jour la direction à chaque itération
-      updateTargetDirection(i);
-    }
-
-    // Appliquer les règles de Boids pour chaque mobile
+    
+    updateTargetDirection(i);
     applyBoidsRules(i);
-
-    // Éviter le prédateur
     avoidPredator(i);
+    update_move(i, dt);
+    collision_collback(i, d);
 
-    // Appliquer la direction cible
-    _mobile[i].vx += (_mobile[i].targetX - _mobile[i].x) * TARGET_WEIGHT;
-    _mobile[i].vy += (_mobile[i].targetY - _mobile[i].y) * TARGET_WEIGHT;
-    _mobile[i].vz += (_mobile[i].targetZ - _mobile[i].z) * TARGET_WEIGHT;
-
-    // Appliquer un facteur d'amortissement léger pour éviter l'augmentation exponentielle de la vitesse
-    _mobile[i].vx *= DAMPING;
-    _mobile[i].vy *= DAMPING;
-    _mobile[i].vz *= DAMPING;
-
-    // Appliquer les vitesses à la position du mobile
-    _mobile[i].x += _mobile[i].vx * dt;
-    _mobile[i].y += _mobile[i].vy * dt;
-    _mobile[i].z += _mobile[i].vz * dt;
-
-    // Gérer les collisions avec les bords de la boîte
-    if( (d = _mobile[i].x - _mobile[i].r + _width) <= EPSILON || 
-        (d = _mobile[i].x + _mobile[i].r - _width) >= -EPSILON ) {
-      if(d * _mobile[i].vx > 0) _mobile[i].vx = -_mobile[i].vx;
-      _mobile[i].x -= d - EPSILON;
-      frottements(i, 0.1f, 0.0f, 0.1f);
-    }
-
-    if( (d = _mobile[i].z - _mobile[i].r + _depth) <= EPSILON || 
-        (d = _mobile[i].z + _mobile[i].r - _depth) >= -EPSILON ) {
-      if(d * _mobile[i].vz > 0) _mobile[i].vz = -_mobile[i].vz;
-      _mobile[i].z -= d - EPSILON;
-      frottements(i, 0.1f, 0.0f, 0.1f);
-    }
-
-    // Si le bord de la sphère touche le bas de la boîte
-    if( (d = _mobile[i].y - _mobile[i].r) <= EPSILON ) {
-      if(_mobile[i].vy < 0) _mobile[i].vy = -_mobile[i].vy;
-      _mobile[i].y -= d - EPSILON;
-      _mobile[i].y_direction_inversee = GL_FALSE;
-      // Appliquer un amortissement supplémentaire sur l'axe y
-      _mobile[i].vy *= DAMPING;
-      frottements(i, 0.1f, 0.0f, 0.1f);
-    }
-
-    // Si le bord de la sphère touche le haut de la boîte
-    if( (d = _mobile[i].y + _mobile[i].r - HAUTEUR_SEUIL) >= -EPSILON ) {
-      if(_mobile[i].vy > 0) _mobile[i].vy = -_mobile[i].vy;
-      _mobile[i].y -= d - EPSILON;
-      _mobile[i].y_direction_inversee = GL_FALSE;
-      // Appliquer un amortissement supplémentaire sur l'axe y
-      _mobile[i].vy *= DAMPING;
-      frottements(i, 0.1f, 0.0f, 0.1f);
-    }
-    printf("target x : %f y : %f z : %f\n", _mobile[i].targetX, _mobile[i].targetY, _mobile[i].targetZ);
+    // Affichage des valeurs calculées et des nouvelles vitesses
+    // printf("Mobile %d:\n", i);
+    // printf("  Target: (%.2f, %.2f, %.2f)\n", _mobile[i].targetX, _mobile[i].targetY, _mobile[i].targetZ);
+    // printf("  Position: (%.2f, %.2f, %.2f)\n", _mobile[i].x, _mobile[i].y, _mobile[i].z);
+    // printf("  Velocity: (%.2f, %.2f, %.2f)\n", _mobile[i].vx, _mobile[i].vy, _mobile[i].vz);
   }
 }
 
@@ -298,7 +250,69 @@ static void avoidPredator(int i) {
     _mobile[i].vx -= dx / d * PREDATOR_AVOIDANCE_WEIGHT;
     _mobile[i].vy -= dy / d * PREDATOR_AVOIDANCE_WEIGHT;
     _mobile[i].vz -= dz / d * PREDATOR_AVOIDANCE_WEIGHT;
-    printf("\nBOOOOOO\n\n");
+    // printf("\nBOOOOOO\n\n");
+  }
+}
+
+static void update_move(int i, float dt){
+  // Appliquer la direction cible
+  _mobile[i].vx += (_mobile[i].targetX - _mobile[i].x) * TARGET_WEIGHT;
+  _mobile[i].vy += (_mobile[i].targetY - _mobile[i].y) * TARGET_WEIGHT;
+  _mobile[i].vz += (_mobile[i].targetZ - _mobile[i].z) * TARGET_WEIGHT;
+
+  // Appliquer un facteur d'amortissement léger pour éviter l'augmentation exponentielle de la vitesse
+  _mobile[i].vx *= DAMPING;
+  _mobile[i].vy *= DAMPING;
+  _mobile[i].vz *= DAMPING;
+
+  // Appliquer des limites de vitesse
+  if (_mobile[i].vx > VELOCITY_LIMIT) _mobile[i].vx = VELOCITY_LIMIT;
+  if (_mobile[i].vx < -VELOCITY_LIMIT) _mobile[i].vx = -VELOCITY_LIMIT;
+  if (_mobile[i].vy > VELOCITY_LIMIT) _mobile[i].vy = VELOCITY_LIMIT;
+  if (_mobile[i].vy < -VELOCITY_LIMIT) _mobile[i].vy = -VELOCITY_LIMIT;
+  if (_mobile[i].vz > VELOCITY_LIMIT) _mobile[i].vz = VELOCITY_LIMIT;
+  if (_mobile[i].vz < -VELOCITY_LIMIT) _mobile[i].vz = -VELOCITY_LIMIT;
+
+  // Appliquer les vitesses à la position du mobile
+  _mobile[i].x += _mobile[i].vx * dt;
+  _mobile[i].y += _mobile[i].vy * dt;
+  _mobile[i].z += _mobile[i].vz * dt;
+}
+
+static void collision_collback(int i, float d) {
+  // Gérer les collisions avec les bords de la boîte
+  if( (d = _mobile[i].x - _mobile[i].r + _width) <= EPSILON || 
+      (d = _mobile[i].x + _mobile[i].r - _width) >= -EPSILON ) {
+    if(d * _mobile[i].vx > 0) _mobile[i].vx = -_mobile[i].vx;
+    _mobile[i].x -= d - EPSILON;
+    frottements(i, 0.1f, 0.0f, 0.1f);
+  }
+
+  if( (d = _mobile[i].z - _mobile[i].r + _depth) <= EPSILON || 
+      (d = _mobile[i].z + _mobile[i].r - _depth) >= -EPSILON ) {
+    if(d * _mobile[i].vz > 0) _mobile[i].vz = -_mobile[i].vz;
+    _mobile[i].z -= d - EPSILON;
+    frottements(i, 0.1f, 0.0f, 0.1f);
+  }
+
+  // Si le bord de la sphère touche le bas de la boîte
+  if( (d = _mobile[i].y - _mobile[i].r) <= EPSILON ) {
+    if(_mobile[i].vy < 0) _mobile[i].vy = -_mobile[i].vy;
+    _mobile[i].y -= d - EPSILON;
+    _mobile[i].y_direction_inversee = GL_FALSE;
+    // Appliquer un amortissement supplémentaire sur l'axe y
+    _mobile[i].vy *= DAMPING;
+    frottements(i, 0.1f, 0.0f, 0.1f);
+  }
+
+  // Si le bord de la sphère touche le haut de la boîte
+  if( (d = _mobile[i].y + _mobile[i].r - HAUTEUR_SEUIL) >= -EPSILON ) {
+    if(_mobile[i].vy > 0) _mobile[i].vy = -_mobile[i].vy;
+    _mobile[i].y -= d - EPSILON;
+    _mobile[i].y_direction_inversee = GL_FALSE;
+    // Appliquer un amortissement supplémentaire sur l'axe y
+    _mobile[i].vy *= DAMPING;
+    frottements(i, 0.1f, 0.0f, 0.1f);
   }
 }
 
