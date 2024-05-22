@@ -30,8 +30,10 @@ typedef struct mobile_t {
   GLfloat color[4];
   GLboolean freeze;
   GLboolean y_direction_inversee;
-  GLfloat targetX, targetY, targetZ; // Direction cible
+  GLfloat targetX, targetY, targetZ;
 } mobile_t;
+
+extern mobile_t * _mobile;
 
 void mobileInit(int n, GLfloat width, GLfloat depth);
 void mobileSetFreeze(GLuint id, GLboolean freeze);
@@ -39,7 +41,4 @@ void mobileGetCoords(GLuint id, GLfloat * coords);
 void mobileSetCoords(GLuint id, GLfloat * coords);
 void mobileMove(void);
 void mobileDraw(GLuint obj);
-void attraction(GLuint id, GLfloat * coords);
-void repulsion(GLuint id, GLfloat * coords);
-void applySpringForce(GLuint id, GLuint neighborId); 
 #endif
