@@ -7,7 +7,6 @@
 #define VELOCITY_LIMIT_PREDATOR 10.0f // Limite de la vitesse
 #define TARGET_WEIGHT_PREDATOR .8f // Limite de la vitesse
 
-
 typedef struct {
   GLfloat x, y, z, r;
   GLfloat vx, vy, vz;

@@ -4,6 +4,9 @@
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
 
+#include "assimp.h"
+#include "predateur.h"
+
 extern GLfloat _plan_s;
 
 #define HAUTEUR_SEUIL 7.0f

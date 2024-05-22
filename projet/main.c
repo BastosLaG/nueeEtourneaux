@@ -1,11 +1,10 @@
+#include "headers/mobile.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <GL4D/gl4df.h>
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4duw_SDL2.h>
-#include "mobile.h"
-#include "predateur.h"
 
 static void init(void);
 static void mouse(int button, int state, int x, int y);
@@ -18,6 +17,8 @@ static int _windowWidth = 1280, _windowHeight = 720;
 static GLuint _shPID = 0;
 /*!\brief identifiant du programme shadow map GLSL */
 static GLuint _smPID = 0;
+/*!\brief identifiant de notre étourneau */
+static GLuint _moineau = 0;
 /*!\brief quelques objets géométriques */
 static GLuint _sphere = 0, _quad = 0;
 /*!\brief scale du plan */
@@ -64,6 +65,9 @@ static void init(void) {
   glEnable(GL_DEPTH_TEST);
   _shPID  = gl4duCreateProgram("<vs>shaders/basic.vs", "<fs>shaders/basic.fs", NULL);
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
+
+  _moineau = assimpGenScene("models/étourneau_trop_bg.obj");
+  
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightProjectionMatrix");
@@ -234,7 +238,7 @@ static inline void scene(GLboolean sm) {
   gl4dgDraw(_quad);
   gl4duSendMatrices();
   mobileDraw(_sphere);
-  predatorDraw(_sphere); // Dessiner le prédateur
+  predatorDraw(_sphere);
 }
 
 /*!\brief dessine dans le contexte OpenGL actif. */
@@ -251,13 +255,13 @@ static void draw(void) {
   glViewport(0, 0, SHADOW_MAP_SIDE, SHADOW_MAP_SIDE);
   glClear(GL_DEPTH_BUFFER_BIT);
   scene(GL_TRUE);
-/*   glDrawBuffers(1, &renderings[0]); */
-/*   glBindTexture(GL_TEXTURE_2D, _smTex); */
-/*   glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, _pixels); */
-/*   glBindTexture(GL_TEXTURE_2D, _colorTex); */
-/*   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth, _windowHeight, 0, GL_RED, GL_FLOAT, _pixels); */
-/*   gl4dfConvTex2Frame(_colorTex); */
-  //return;
+  glDrawBuffers(1, &renderings[0]);
+  glBindTexture(GL_TEXTURE_2D, _smTex);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, _pixels);
+  glBindTexture(GL_TEXTURE_2D, _colorTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth, _windowHeight, 0, GL_RED, GL_FLOAT, _pixels);
+  gl4dfConvTex2Frame(_colorTex);
+  // return;
   /* paramétrer le fbo pour 2 rendus couleurs + un (autre) depth */
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, _idTex, 0);

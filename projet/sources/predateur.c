@@ -2,8 +2,7 @@
 #include <GL4D/gl4dg.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "predateur.h"
-#include "mobile.h"
+#include "../headers/mobile.h"
 
 // Structure du prédateur pour stocker ses propriétés
 predator_t _predator;

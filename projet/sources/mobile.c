@@ -4,8 +4,7 @@
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
 #include <stdio.h>
-#include "predateur.h"
-#include "mobile.h"
+#include "../headers/mobile.h"
 
 mobile_t * _mobile = NULL;
 static int _nb_mobiles = 0;
@@ -45,9 +44,9 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].color[3] = 1.0f;
     _mobile[i].freeze = GL_FALSE;
     _mobile[i].y_direction_inversee = GL_FALSE;
-    updateTargetDirection(i); // Initialiser la direction cible
+    updateTargetDirection(i);
   }
-  predatorInit(_nb_mobiles,_width, HAUTEUR_SEUIL, _depth); // Initialiser le prédateur
+  predatorInit(_nb_mobiles,_width, HAUTEUR_SEUIL, _depth);
 }
 
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
