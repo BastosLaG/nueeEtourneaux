@@ -100,7 +100,7 @@ void mobileDraw(GLuint obj) {
     gl4duPopMatrix();
     glUniform1i(glGetUniformLocation(pId, "id"), i + 3);
     glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _mobile[i].color);
-    gl4dgDraw(obj);
+    assimpDrawScene(obj);
   }
 }
 

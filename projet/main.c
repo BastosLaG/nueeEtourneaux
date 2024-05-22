@@ -237,8 +237,8 @@ static inline void scene(GLboolean sm) {
   } gl4duPopMatrix();
   gl4dgDraw(_quad);
   gl4duSendMatrices();
-  mobileDraw(_sphere);
-  predatorDraw(_sphere);
+  mobileDraw(_moineau);
+  predatorDraw(_moineau);
 }
 
 /*!\brief dessine dans le contexte OpenGL actif. */
