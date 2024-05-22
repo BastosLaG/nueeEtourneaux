@@ -40,26 +40,27 @@ void predatorInit(int nb_mobiles, GLfloat width, GLfloat height, GLfloat depth) 
 void predatorMove(GLfloat width, GLfloat height, GLfloat depth) {
   double dt = get_dt();
   
-
   predateurUpdateTargetDirection();
   
-  // Mettre à jour la vitesse vers la direction de la cible
-  _predator.vx += (_predator.targetX - _predator.x) * TARGET_WEIGHT_PREDATOR;
-  _predator.vy += (_predator.targetY - _predator.y) * TARGET_WEIGHT_PREDATOR;
-  _predator.vz += (_predator.targetZ - _predator.z) * TARGET_WEIGHT_PREDATOR;
+  if (fabs(predateurDistance()) >= _predator.r * 10){
+    // Mettre à jour la vitesse vers la direction de la cible
+    _predator.vx += (_predator.targetX - _predator.x) * TARGET_WEIGHT_PREDATOR;
+    _predator.vy += (_predator.targetY - _predator.y) * TARGET_WEIGHT_PREDATOR;
+    _predator.vz += (_predator.targetZ - _predator.z) * TARGET_WEIGHT_PREDATOR;
 
-  // Appliquer un amortissement pour éviter l'augmentation exponentielle de la vitesse
-  _predator.vx *= DAMPING;
-  _predator.vy *= DAMPING;
-  _predator.vz *= DAMPING;
+    // Appliquer un amortissement pour éviter l'augmentation exponentielle de la vitesse
+    _predator.vx *= DAMPING;
+    _predator.vy *= DAMPING;
+    _predator.vz *= DAMPING;
 
-  // Limiter la vitesse à la valeur maximale
-  if (_predator.vx > VELOCITY_LIMIT_PREDATOR) _predator.vx = VELOCITY_LIMIT_PREDATOR;
-  if (_predator.vx < -VELOCITY_LIMIT_PREDATOR) _predator.vx = -VELOCITY_LIMIT_PREDATOR;
-  if (_predator.vy > VELOCITY_LIMIT_PREDATOR) _predator.vy = VELOCITY_LIMIT_PREDATOR;
-  if (_predator.vy < -VELOCITY_LIMIT_PREDATOR) _predator.vy = -VELOCITY_LIMIT_PREDATOR;
-  if (_predator.vz > VELOCITY_LIMIT_PREDATOR) _predator.vz = VELOCITY_LIMIT_PREDATOR;
-  if (_predator.vz < -VELOCITY_LIMIT_PREDATOR) _predator.vz = -VELOCITY_LIMIT_PREDATOR;
+    // Limiter la vitesse à la valeur maximale
+    if (_predator.vx > VELOCITY_LIMIT_PREDATOR) _predator.vx = VELOCITY_LIMIT_PREDATOR;
+    if (_predator.vx < -VELOCITY_LIMIT_PREDATOR) _predator.vx = -VELOCITY_LIMIT_PREDATOR;
+    if (_predator.vy > VELOCITY_LIMIT_PREDATOR) _predator.vy = VELOCITY_LIMIT_PREDATOR;
+    if (_predator.vy < -VELOCITY_LIMIT_PREDATOR) _predator.vy = -VELOCITY_LIMIT_PREDATOR;
+    if (_predator.vz > VELOCITY_LIMIT_PREDATOR) _predator.vz = VELOCITY_LIMIT_PREDATOR;
+    if (_predator.vz < -VELOCITY_LIMIT_PREDATOR) _predator.vz = -VELOCITY_LIMIT_PREDATOR;
+  }
 
   // Mettre à jour la position du prédateur en fonction de la vitesse limitée
   _predator.x += _predator.vx * dt;
