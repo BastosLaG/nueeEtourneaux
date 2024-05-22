@@ -4,6 +4,10 @@
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
 
+#define VELOCITY_LIMIT_PREDATOR 10.0f // Limite de la vitesse
+#define TARGET_WEIGHT_PREDATOR .8f // Limite de la vitesse
+
+
 typedef struct {
   GLfloat x, y, z, r;
   GLfloat vx, vy, vz;
@@ -11,6 +15,7 @@ typedef struct {
   GLuint nb_mobiles;
   GLfloat changeDirectionCounter;
   GLfloat targetX, targetY, targetZ;
+  GLboolean y_direction_inversee;
 } predator_t;
 
 extern predator_t _predator;
