@@ -43,7 +43,7 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
   _mobile = malloc(_nb_mobiles * sizeof * _mobile);
   assert(_mobile);
   for(i = 0; i < _nb_mobiles; i++) {
-    _mobile[i].r = 0.1f;
+    _mobile[i].r = 0.2f;
     _mobile[i].x = gl4dmSURand() * _width - _mobile[i].r;
     _mobile[i].z = gl4dmSURand() * _depth - _mobile[i].r;
     _mobile[i].y = _depth;
@@ -270,7 +270,7 @@ static void applyBoidsRules(int i) {
   GLfloat centerX = 0, centerY = 0, centerZ = 0;
   GLfloat separationX = 0, separationY = 0, separationZ = 0;
   GLfloat d;
-  GLfloat influenceDistance = _mobile[i].r * 20; // Augmenter la distance d'influence
+  GLfloat influenceDistance = _mobile[i].r * 4; // Augmenter la distance d'influence
 
   for(j = 0; j < _nb_mobiles; j++) {
     if(i == j) continue;

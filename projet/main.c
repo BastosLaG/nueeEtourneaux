@@ -24,6 +24,7 @@ static GLuint _smPID = 0;
 static GLuint _moineau = 0;
 
 // Quelques objets géométriques
+
 static GLuint _sphere = 0, _quad = 0;
 
 // Scale du plan
@@ -73,6 +74,7 @@ static void init(void) {
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
 
   _moineau = assimpGenScene("models/étourneau_trop_bg_flat.obj");
+  _rapace = assimpGenScene("models/étourneau_trop_bg.obj");
   
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");
@@ -244,7 +246,7 @@ static inline void scene(GLboolean sm) {
   gl4dgDraw(_quad);
   gl4duSendMatrices();
   mobileDraw(_moineau);
-  predatorDraw(_moineau);
+  predatorDraw(_rapace);
 }
 
 // Dessine dans le contexte OpenGL actif
