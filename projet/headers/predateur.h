@@ -22,5 +22,6 @@ extern predator_t _predator;
 void predatorInit(int nb_mobiles, GLfloat width, GLfloat height, GLfloat depth);
 void predatorMove(GLfloat width, GLfloat height, GLfloat depth);
 void predatorDraw(GLuint obj);
+void predatorFree(void);
 
 #endif

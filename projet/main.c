@@ -1,4 +1,5 @@
 #include "headers/mobile.h"
+#include "headers/predateur.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -100,7 +101,6 @@ static void init(void) {
   _sphere = gl4dgGenSpheref(30, 30);
   _quad = gl4dgGenQuadf();
   mobileInit(_nb_mobiles, _plan_s, _plan_s);
-  predatorInit(_nb_mobiles, _plan_s, HAUTEUR_SEUIL, _plan_s);
 
   // Création et paramétrage de la Texture de shadow map
   glGenTextures(1, &_smTex);
@@ -140,7 +140,13 @@ static void init(void) {
 // Gestion des événements clavier
 static void keydown(int keycode) {
   if(keycode == SDLK_p) {
-    _predator_visible = !_predator_visible;
+    if(_predator_visible) {
+      predatorFree(); // Libère les ressources du prédateur
+      _predator_visible = 0;
+    } else {
+      predatorInit(_nb_mobiles, _plan_s, HAUTEUR_SEUIL, _plan_s); // Initialise le prédateur
+      _predator_visible = 1;
+    }
   }
 }
 
@@ -321,4 +327,7 @@ static void quit(void) {
     _pixels = NULL;
   }
   gl4duClean(GL4DU_ALL);
+  if (_predator_visible) {
+    predatorFree();
+  }
 }
