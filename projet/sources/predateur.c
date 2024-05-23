@@ -14,6 +14,11 @@ static void frottements(GLfloat kx, GLfloat ky, GLfloat kz);
 static void predateurBoxCollider(void);
 static double get_dt(void);
 
+static void normalize(GLfloat *v);
+static GLfloat dotProduct(GLfloat *a, GLfloat *b);
+static void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result);
+static void orientPredator();
+
 static GLfloat _width = 1, _depth = 1;
 
 // Initialiser le prédateur avec des valeurs initiales et définir la direction de la cible
@@ -92,12 +97,13 @@ void predatorDraw(GLuint obj) {
   GLint pId;
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
   gl4duPushMatrix();
-  gl4duTranslatef(_predator.x, _predator.y, _predator.z);
-  // gl4duScalef(_predator.r, _predator.r, _predator.r);
+  orientPredator();
+  gl4duScalef(2.0f, 2.0f, 2.0f);
   gl4duSendMatrices();
   // gl4duPopMatrix();
   glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _predator.color);
-  gl4dgDraw(obj);
+  // gl4dgDraw(obj);
+  assimpDrawScene(obj);
 }
 
 static void frottements(GLfloat kx, GLfloat ky, GLfloat kz) {
@@ -179,4 +185,46 @@ static double get_dt(void) {
   dt = (t - t0) / 1000.0;
   t0 = t;
   return dt;
+}
+
+// Normalise un vecteur
+static void normalize(GLfloat *v) {
+  GLfloat length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  if (length != 0) {
+    v[0] /= length;
+    v[1] /= length;
+    v[2] /= length;
+  }
+}
+// Calcule le produit scalaire de deux vecteurs
+static GLfloat dotProduct(GLfloat *a, GLfloat *b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+// Calcule le produit vectoriel de deux vecteurs
+static void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result) {
+  result[0] = a[1] * b[2] - a[2] * b[1];
+  result[1] = a[2] * b[0] - a[0] * b[2];
+  result[2] = a[0] * b[1] - a[1] * b[0];
+}
+// Oriente le mobile selon sa direction de déplacement
+static void orientPredator() {
+  GLfloat direction[] = { _predator.vx, _predator.vy, _predator.vz };
+  normalize(direction);
+
+  // Le vecteur de référence initial (ex : axe Z)
+  GLfloat reference[] = { 0.0f, 0.0f, 1.0f };
+
+  // Calcul de l'angle entre la direction et le vecteur de référence
+  GLfloat dot = dotProduct(reference, direction);
+  GLfloat angle = acos(dot) * 180.0f / M_PI;
+
+  // Calcul de l'axe de rotation (produit vectoriel entre la référence et la direction)
+  GLfloat axis[3];
+  crossProduct(reference, direction, axis);
+  normalize(axis);
+
+  // Appliquer la rotation au mobile
+  gl4duLoadIdentityf();
+  gl4duTranslatef(_predator.x, _predator.y, _predator.z);
+  gl4duRotatef(angle, axis[0], axis[1], axis[2]);
 }

@@ -28,6 +28,11 @@ static void update_move(int i, float dt);
 static void collision_collback(int i, float d);
 static void applySpringForces(void);
 
+static void normalize(GLfloat *v);
+static GLfloat dotProduct(GLfloat *a, GLfloat *b);
+static void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result);
+static void orientMobile(int i);
+
 // Initialisation des mobiles
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
@@ -66,7 +71,6 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
   }
   predatorInit(_nb_mobiles, _width, HAUTEUR_SEUIL, _depth);
 }
-
 // Initialisation des ressorts
 void springInit(int n) {
   int i;
@@ -85,26 +89,22 @@ void springInit(int n) {
            i, _springs[i].a, _springs[i].b, _springs[i].rest_length);
   }
 }
-
 // Définit si un mobile est gelé ou non
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
   _mobile[id].freeze = freeze;
 }
-
 // Récupère les coordonnées d'un mobile
 void mobileGetCoords(GLuint id, GLfloat * coords) {
   coords[0] = _mobile[id].x;
   coords[1] = _mobile[id].y;
   coords[2] = _mobile[id].z;
 }
-
 // Définit les coordonnées d'un mobile
 void mobileSetCoords(GLuint id, GLfloat * coords) {
   _mobile[id].x = coords[0];
   _mobile[id].y = coords[1];
   _mobile[id].z = coords[2];
 }
-
 // Met à jour les positions et états des mobiles
 void mobileMove(void) {
   int i;
@@ -129,7 +129,6 @@ void mobileMove(void) {
            _mobile[i].vx, _mobile[i].vy, _mobile[i].vz);
   }
 }
-
 // Applique les forces des ressorts
 static void applySpringForces(void) {
   for(int i = 0; i < _nb_springs; i++) {
@@ -157,9 +156,8 @@ static void applySpringForces(void) {
     _mobile[b].vz -= fz;
   }
 }
-
 // Normalise un vecteur
-void normalize(GLfloat *v) {
+static void normalize(GLfloat *v) {
   GLfloat length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
   if (length != 0) {
     v[0] /= length;
@@ -167,21 +165,18 @@ void normalize(GLfloat *v) {
     v[2] /= length;
   }
 }
-
 // Calcule le produit scalaire de deux vecteurs
-GLfloat dotProduct(GLfloat *a, GLfloat *b) {
+static GLfloat dotProduct(GLfloat *a, GLfloat *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
-
 // Calcule le produit vectoriel de deux vecteurs
-void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result) {
+static void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result) {
   result[0] = a[1] * b[2] - a[2] * b[1];
   result[1] = a[2] * b[0] - a[0] * b[2];
   result[2] = a[0] * b[1] - a[1] * b[0];
 }
-
 // Oriente le mobile selon sa direction de déplacement
-void orientMobile(int i) {
+static void orientMobile(int i) {
   GLfloat direction[] = { _mobile[i].vx, _mobile[i].vy, _mobile[i].vz };
   normalize(direction);
 
@@ -214,7 +209,7 @@ void mobileDraw(GLuint obj) {
     gl4duSendMatrices();
     glUniform1i(glGetUniformLocation(pId, "id"), i + 3);
     glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _mobile[i].color);
-    printf("Moineau %d - Couleur envoyée au shader: (%.2f, %.2f, %.2f, %.2f)\n", i, _mobile[i].color[0], _mobile[i].color[1], _mobile[i].color[2], _mobile[i].color[3]);
+    // printf("Moineau %d - Couleur envoyée au shader: (%.2f, %.2f, %.2f, %.2f)\n", i, _mobile[i].color[0], _mobile[i].color[1], _mobile[i].color[2], _mobile[i].color[3]);
     assimpDrawScene(obj);
     gl4duPopMatrix();
   }

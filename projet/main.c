@@ -56,7 +56,7 @@ static GLfloat _lumpos[] = { 9, 3, 0, 1 };
 #define SHADOW_MAP_SIDE 512
 
 // Variable de contrôle pour l'affichage du prédateur
-static int _predator_visible = 0;
+static GLuint _predator_visible = 0;
 
 // Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
@@ -80,7 +80,7 @@ static void init(void) {
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
 
   _moineau = assimpGenScene("models/étourneau_trop_bg_flat.obj");
-  _rapace = assimpGenScene("models/étourneau_trop_bg.obj");
+  _rapace = assimpGenScene("models/étourneau_trop_bg_flat.obj");
   
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");
@@ -141,10 +141,10 @@ static void init(void) {
 static void keydown(int keycode) {
   if(keycode == SDLK_p) {
     if(_predator_visible) {
-      predatorFree(); // Libère les ressources du prédateur
+      predatorFree();
       _predator_visible = 0;
     } else {
-      predatorInit(_nb_mobiles, _plan_s, HAUTEUR_SEUIL, _plan_s); // Initialise le prédateur
+      predatorInit(_nb_mobiles, _plan_s, HAUTEUR_SEUIL, _plan_s);
       _predator_visible = 1;
     }
   }
