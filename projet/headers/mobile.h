@@ -36,7 +36,13 @@ typedef struct mobile_t {
   GLfloat targetX, targetY, targetZ;
 } mobile_t;
 
+typedef struct spring_t {
+  int a, b; // Indices des deux mobiles reliés par le ressort
+  GLfloat rest_length; // Longueur au repos du ressort
+} spring_t;
+
 extern mobile_t * _mobile;
+extern spring_t * _springs;
 
 void mobileInit(int n, GLfloat width, GLfloat depth);
 void mobileSetFreeze(GLuint id, GLboolean freeze);
@@ -44,4 +50,6 @@ void mobileGetCoords(GLuint id, GLfloat * coords);
 void mobileSetCoords(GLuint id, GLfloat * coords);
 void mobileMove(void);
 void mobileDraw(GLuint obj);
+void springInit(int n);
+
 #endif

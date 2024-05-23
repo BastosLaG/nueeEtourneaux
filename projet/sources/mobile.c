@@ -1,19 +1,23 @@
+#include "headers/mobile.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
-#include <stdio.h>
-#include "../headers/mobile.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+// Déclaration des variables globales et constantes
 mobile_t * _mobile = NULL;
+spring_t * _springs = NULL;
 static int _nb_mobiles = 0;
+static int _nb_springs = 0;
 static GLfloat _width = 1, _depth = 1;
 
+// Déclaration des fonctions
 static void quit(void);
 static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz);
 static double get_dt(void);
@@ -22,17 +26,21 @@ static void updateTargetDirection(int i);
 static void avoidPredator(int i);
 static void update_move(int i, float dt);
 static void collision_collback(int i, float d);
+static void applySpringForces(void);
 
+// Initialisation des mobiles
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
-  _width = width; _depth = depth;
+  _width = width; 
+  _depth = depth;
   _nb_mobiles = n;
   if(_mobile) {
     free(_mobile);
     _mobile = NULL;
-  } else
+  } else {
     atexit(quit);
-  _mobile = malloc(_nb_mobiles * sizeof *_mobile);
+  }
+  _mobile = malloc(_nb_mobiles * sizeof * _mobile);
   assert(_mobile);
   for(i = 0; i < _nb_mobiles; i++) {
     _mobile[i].r = 0.1f;
@@ -42,57 +50,115 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].vx = 3.0f * (gl4dmSURand() - 0.5f);
     _mobile[i].vy = 3.0f * (gl4dmSURand() - 0.5f);
     _mobile[i].vz = 3.0f * (gl4dmSURand() - 0.5f);
-    _mobile[i].color[0] = gl4dmURand();
-    _mobile[i].color[1] = gl4dmURand();
-    _mobile[i].color[2] = gl4dmURand();
-    _mobile[i].color[3] = 1.0f;
+    // Définir la couleur bleue
+    _mobile[i].color[0] = 0.0f; // Rouge
+    _mobile[i].color[1] = 1.0f; // Vert
+    _mobile[i].color[2] = 0.0f; // Bleu
+    _mobile[i].color[3] = 1.0f; // Alpha
     _mobile[i].freeze = GL_FALSE;
     _mobile[i].y_direction_inversee = GL_FALSE;
     updateTargetDirection(i);
+
+    // Ajout des print pour vérifier l'initialisation
+    printf("Mobile %d - Position: (%.2f, %.2f, %.2f), Couleur: (%.2f, %.2f, %.2f, %.2f)\n", 
+           i, _mobile[i].x, _mobile[i].y, _mobile[i].z, 
+           _mobile[i].color[0], _mobile[i].color[1], _mobile[i].color[2], _mobile[i].color[3]);
   }
-  predatorInit(_nb_mobiles,_width, HAUTEUR_SEUIL, _depth);
+  predatorInit(_nb_mobiles, _width, HAUTEUR_SEUIL, _depth);
 }
 
+// Initialisation des ressorts
+void springInit(int n) {
+  int i;
+  _nb_springs = n;
+  if(_springs) {
+    free(_springs);
+    _springs = NULL;
+  }
+  _springs = malloc(_nb_springs * sizeof * _springs);
+  assert(_springs);
+  for(i = 0; i < _nb_springs; i++) {
+    _springs[i].a = rand() % _nb_mobiles;
+    _springs[i].b = rand() % _nb_mobiles;
+    _springs[i].rest_length = 10.0f; // Longueur au repos arbitraire, peut être ajustée
+    printf("Ressort %d - Entre mobiles %d et %d, Longueur au repos: %.2f\n", 
+           i, _springs[i].a, _springs[i].b, _springs[i].rest_length);
+  }
+}
+
+// Définit si un mobile est gelé ou non
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
   _mobile[id].freeze = freeze;
 }
 
+// Récupère les coordonnées d'un mobile
 void mobileGetCoords(GLuint id, GLfloat * coords) {
   coords[0] = _mobile[id].x;
   coords[1] = _mobile[id].y;
   coords[2] = _mobile[id].z;
 }
 
+// Définit les coordonnées d'un mobile
 void mobileSetCoords(GLuint id, GLfloat * coords) {
   _mobile[id].x = coords[0];
   _mobile[id].y = coords[1];
   _mobile[id].z = coords[2];
 }
 
+// Met à jour les positions et états des mobiles
 void mobileMove(void) {
   int i;
   double dt = get_dt(), d;
-  
+
   predatorMove(_plan_s, HAUTEUR_SEUIL, _plan_s);
+
+  applySpringForces();
 
   for(i = 0; i < _nb_mobiles; i++) {
     if(_mobile[i].freeze) continue;
-    
+
     updateTargetDirection(i);
     applyBoidsRules(i);
     avoidPredator(i);
     update_move(i, dt);
     collision_collback(i, d);
 
-    // Affichage des valeurs calculées et des nouvelles vitesses
-    // printf("Mobile %d:\n", i);
-    // printf("  Target: (%.2f, %.2f, %.2f)\n", _mobile[i].targetX, _mobile[i].targetY, _mobile[i].targetZ);
-    // printf("  Position: (%.2f, %.2f, %.2f)\n", _mobile[i].x, _mobile[i].y, _mobile[i].z);
-    // printf("  Velocity: (%.2f, %.2f, %.2f)\n", _mobile[i].vx, _mobile[i].vy, _mobile[i].vz);
+    // Ajout des print pour vérifier les mises à jour
+    printf("Mobile %d - Position: (%.2f, %.2f, %.2f), Vitesse: (%.2f, %.2f, %.2f)\n", 
+           i, _mobile[i].x, _mobile[i].y, _mobile[i].z, 
+           _mobile[i].vx, _mobile[i].vy, _mobile[i].vz);
   }
 }
 
-// Fonction pour normaliser un vecteur
+// Applique les forces des ressorts
+static void applySpringForces(void) {
+  for(int i = 0; i < _nb_springs; i++) {
+    int a = _springs[i].a;
+    int b = _springs[i].b;
+    GLfloat dx = _mobile[b].x - _mobile[a].x;
+    GLfloat dy = _mobile[b].y - _mobile[a].y;
+    GLfloat dz = _mobile[b].z - _mobile[a].z;
+    GLfloat distance = sqrt(dx * dx + dy * dy + dz * dz);
+    GLfloat force = K_RESSORT * (distance - _springs[i].rest_length);
+
+    if(force > MAX_FORCE) force = MAX_FORCE;
+    if(force < -MAX_FORCE) force = -MAX_FORCE;
+
+    GLfloat fx = (dx / distance) * force;
+    GLfloat fy = (dy / distance) * force;
+    GLfloat fz = (dz / distance) * force;
+
+    _mobile[a].vx += fx;
+    _mobile[a].vy += fy;
+    _mobile[a].vz += fz;
+
+    _mobile[b].vx -= fx;
+    _mobile[b].vy -= fy;
+    _mobile[b].vz -= fz;
+  }
+}
+
+// Normalise un vecteur
 void normalize(GLfloat *v) {
   GLfloat length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
   if (length != 0) {
@@ -102,19 +168,19 @@ void normalize(GLfloat *v) {
   }
 }
 
-// Fonction pour calculer le produit scalaire de deux vecteurs
+// Calcule le produit scalaire de deux vecteurs
 GLfloat dotProduct(GLfloat *a, GLfloat *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-// Fonction pour calculer le produit vectoriel de deux vecteurs
+// Calcule le produit vectoriel de deux vecteurs
 void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result) {
   result[0] = a[1] * b[2] - a[2] * b[1];
   result[1] = a[2] * b[0] - a[0] * b[2];
   result[2] = a[0] * b[1] - a[1] * b[0];
 }
 
-// Fonction pour orienter le mobile selon sa direction de déplacement
+// Oriente le mobile selon sa direction de déplacement
 void orientMobile(int i) {
   GLfloat direction[] = { _mobile[i].vx, _mobile[i].vy, _mobile[i].vz };
   normalize(direction);
@@ -135,9 +201,9 @@ void orientMobile(int i) {
   gl4duLoadIdentityf();
   gl4duTranslatef(_mobile[i].x, _mobile[i].y, _mobile[i].z);
   gl4duRotatef(angle, axis[0], axis[1], axis[2]);
-  // gl4duScalef(_mobile[i].r, _mobile[i].r, _mobile[i].r);
 }
 
+// Dessine les mobiles
 void mobileDraw(GLuint obj) {
   int i;
   GLint pId;
@@ -148,16 +214,20 @@ void mobileDraw(GLuint obj) {
     gl4duSendMatrices();
     glUniform1i(glGetUniformLocation(pId, "id"), i + 3);
     glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _mobile[i].color);
+    printf("Moineau %d - Couleur envoyée au shader: (%.2f, %.2f, %.2f, %.2f)\n", i, _mobile[i].color[0], _mobile[i].color[1], _mobile[i].color[2], _mobile[i].color[3]);
     assimpDrawScene(obj);
+    gl4duPopMatrix();
   }
 }
 
+// Calcule la distance entre deux mobiles
 static GLfloat distance(mobile_t a, mobile_t b) {
   return sqrt((a.x - b.x) * (a.x - b.x) + 
               (a.y - b.y) * (a.y - b.y) + 
               (a.z - b.z) * (a.z - b.z));
 }
 
+// Applique des frottements aux vitesses d'un mobile
 static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz) {
   GLfloat vx = fabs(_mobile[i].vx), vy = fabs(_mobile[i].vy), vz = fabs(_mobile[i].vz);
 
@@ -171,14 +241,20 @@ static void frottements(int i, GLfloat kx, GLfloat ky, GLfloat kz) {
   else              _mobile[i].vz = (vz - kz * vz) * SIGN(_mobile[i].vz);
 }
 
+// Libère la mémoire utilisée par les mobiles
 static void quit(void) {
   _nb_mobiles = 0;
   if(_mobile) {
     free(_mobile);
     _mobile = NULL;
   }
+  if(_springs) {
+    free(_springs);
+    _springs = NULL;
+  }
 }
 
+// Calcule le delta time entre deux frames
 static double get_dt(void) {
   static double t0 = 0, t, dt;
   t = gl4dGetElapsedTime();
@@ -187,7 +263,7 @@ static double get_dt(void) {
   return dt;
 }
 
-// Fonction pour appliquer les règles de Boids
+// Applique les règles des boids pour un mobile donné
 static void applyBoidsRules(int i) {
   int j, count = 0;
   GLfloat avgVx = 0, avgVy = 0, avgVz = 0;
@@ -245,6 +321,7 @@ static void applyBoidsRules(int i) {
   }
 }
 
+// Évite le prédateur pour un mobile donné
 static void avoidPredator(int i) {
   GLfloat dx = _predator.x - _mobile[i].x;
   GLfloat dy = _predator.y - _mobile[i].y;
@@ -254,11 +331,11 @@ static void avoidPredator(int i) {
     _mobile[i].vx -= dx / d * PREDATOR_AVOIDANCE_WEIGHT;
     _mobile[i].vy -= dy / d * PREDATOR_AVOIDANCE_WEIGHT;
     _mobile[i].vz -= dz / d * PREDATOR_AVOIDANCE_WEIGHT;
-    // printf("\nBOOOOOO\n\n");
   }
 }
 
-static void update_move(int i, float dt){
+// Met à jour le mouvement d'un mobile
+static void update_move(int i, float dt) {
   // Appliquer la direction cible
   _mobile[i].vx += (_mobile[i].targetX - _mobile[i].x) * TARGET_WEIGHT;
   _mobile[i].vy += (_mobile[i].targetY - _mobile[i].y) * TARGET_WEIGHT;
@@ -283,24 +360,24 @@ static void update_move(int i, float dt){
   _mobile[i].z += _mobile[i].vz * dt;
 }
 
+// Gère les collisions avec les bords de la boîte
 static void collision_collback(int i, float d) {
-  // Gérer les collisions avec les bords de la boîte
-  if( (d = _mobile[i].x - _mobile[i].r + _width) <= EPSILON || 
-      (d = _mobile[i].x + _mobile[i].r - _width) >= -EPSILON ) {
+  if((d = _mobile[i].x - _mobile[i].r + _width) <= EPSILON || 
+     (d = _mobile[i].x + _mobile[i].r - _width) >= -EPSILON) {
     if(d * _mobile[i].vx > 0) _mobile[i].vx = -_mobile[i].vx;
     _mobile[i].x -= d - EPSILON;
     frottements(i, 0.1f, 0.0f, 0.1f);
   }
 
-  if( (d = _mobile[i].z - _mobile[i].r + _depth) <= EPSILON || 
-      (d = _mobile[i].z + _mobile[i].r - _depth) >= -EPSILON ) {
+  if((d = _mobile[i].z - _mobile[i].r + _depth) <= EPSILON || 
+     (d = _mobile[i].z + _mobile[i].r - _depth) >= -EPSILON) {
     if(d * _mobile[i].vz > 0) _mobile[i].vz = -_mobile[i].vz;
     _mobile[i].z -= d - EPSILON;
     frottements(i, 0.1f, 0.0f, 0.1f);
   }
 
   // Si le bord de la sphère touche le bas de la boîte
-  if( (d = _mobile[i].y - _mobile[i].r) <= EPSILON ) {
+  if((d = _mobile[i].y - _mobile[i].r) <= EPSILON) {
     if(_mobile[i].vy < 0) _mobile[i].vy = -_mobile[i].vy;
     _mobile[i].y -= d - EPSILON;
     _mobile[i].y_direction_inversee = GL_FALSE;
@@ -310,7 +387,7 @@ static void collision_collback(int i, float d) {
   }
 
   // Si le bord de la sphère touche le haut de la boîte
-  if( (d = _mobile[i].y + _mobile[i].r - HAUTEUR_SEUIL) >= -EPSILON ) {
+  if((d = _mobile[i].y + _mobile[i].r - HAUTEUR_SEUIL) >= -EPSILON) {
     if(_mobile[i].vy > 0) _mobile[i].vy = -_mobile[i].vy;
     _mobile[i].y -= d - EPSILON;
     _mobile[i].y_direction_inversee = GL_FALSE;
@@ -320,10 +397,9 @@ static void collision_collback(int i, float d) {
   }
 }
 
-// Fonction pour mettre à jour la direction cible aléatoire
+// Met à jour la direction cible aléatoire d'un mobile
 static void updateTargetDirection(int i) {
   _mobile[i].targetX = gl4dmSURand() * _width - _mobile[i].r;
   _mobile[i].targetY = gl4dmURand() * (HAUTEUR_SEUIL - (2 * _mobile[i].r)) + _mobile[i].r;
   _mobile[i].targetZ = gl4dmSURand() * _depth - _mobile[i].r;
 }
-
