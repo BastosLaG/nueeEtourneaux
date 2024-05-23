@@ -1,12 +1,3 @@
-/*!\file basic.vs
- *
- * \brief Transformations matricielles standards pour les sommets et
- * les normales, selon 2 points de vues. Le classique (celui sortant
- * gl_Position) utilise le point de vue de la caméra, l'autre (sort
- * vsoSMCoord) utilise le point de vue de la lumière.
- * \author Farès BELHADJ, amsi@ai.univ-paris8.fr 
- * \date April 15 2016
- */
 #version 330 core
 
 uniform mat4 modelMatrix;
