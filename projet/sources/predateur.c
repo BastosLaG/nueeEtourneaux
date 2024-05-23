@@ -75,9 +75,9 @@ void predatorDraw(GLuint obj) {
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
   gl4duPushMatrix();
   gl4duTranslatef(_predator.x, _predator.y, _predator.z);
-  gl4duScalef(_predator.r, _predator.r, _predator.r);
+  // gl4duScalef(_predator.r, _predator.r, _predator.r);
   gl4duSendMatrices();
-  gl4duPopMatrix();
+  // gl4duPopMatrix();
   glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _predator.color);
   gl4dgDraw(obj);
 }

@@ -17,9 +17,9 @@ static int _windowWidth = 1280, _windowHeight = 720;
 static GLuint _shPID = 0;
 /*!\brief identifiant du programme shadow map GLSL */
 static GLuint _smPID = 0;
-/*!\brief identifiant de notre étourneau */
-static GLuint _moineau = 0;
 /*!\brief quelques objets géométriques */
+static GLuint _moineau = 0;
+static GLuint _rapace = 0;
 static GLuint _sphere = 0, _quad = 0;
 /*!\brief scale du plan */
 GLfloat _plan_s = 5.0f;
@@ -67,6 +67,7 @@ static void init(void) {
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
 
   _moineau = assimpGenScene("models/étourneau_trop_bg_flat.obj");
+  _rapace = assimpGenScene("models/étourneau_trop_bg.obj");
   
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");
@@ -238,7 +239,7 @@ static inline void scene(GLboolean sm) {
   gl4dgDraw(_quad);
   gl4duSendMatrices();
   mobileDraw(_moineau);
-  predatorDraw(_moineau);
+  predatorDraw(_rapace);
 }
 
 /*!\brief dessine dans le contexte OpenGL actif. */

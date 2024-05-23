@@ -149,6 +149,7 @@ void mobileDraw(GLuint obj) {
     glUniform1i(glGetUniformLocation(pId, "id"), i + 3);
     glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _mobile[i].color);
     assimpDrawScene(obj);
+    gl4duSendMatrices();
   }
 }
 
