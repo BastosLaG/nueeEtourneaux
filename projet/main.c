@@ -12,6 +12,7 @@ static void mouse(int button, int state, int x, int y);
 static void motion(int x, int y);
 static void draw(void);
 static void quit(void);
+static void keydown(int keycode);
 
 // Dimensions de la fenêtre
 static int _windowWidth = 1280, _windowHeight = 720;
@@ -25,7 +26,6 @@ static GLuint _moineau = 0;
 static GLuint _rapace = 0;
 
 // Quelques objets géométriques
-
 static GLuint _sphere = 0, _quad = 0;
 
 // Scale du plan
@@ -54,6 +54,9 @@ static GLfloat _lumpos[] = { 9, 3, 0, 1 };
 // Taille de la shadow map
 #define SHADOW_MAP_SIDE 512
 
+// Variable de contrôle pour l'affichage du prédateur
+static int _predator_visible = 0;
+
 // Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
   if(!gl4duwCreateWindow(argc, argv, "GL4D - Picking", 0, 0, _windowWidth, _windowHeight, GL4DW_SHOWN))
@@ -62,6 +65,7 @@ int main(int argc, char ** argv) {
   atexit(quit);
   gl4duwMouseFunc(mouse);
   gl4duwMotionFunc(motion);
+  gl4duwKeyDownFunc(keydown);
   gl4duwIdleFunc(mobileMove);
   gl4duwDisplayFunc(draw);
   gl4duwMainLoop();
@@ -75,7 +79,7 @@ static void init(void) {
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
 
   _moineau = assimpGenScene("models/étourneau_trop_bg_flat.obj");
-  _rapace   = assimpGenScene("models/étourneau_trop_bg_flat.obj");
+  _rapace = assimpGenScene("models/étourneau_trop_bg.obj");
   
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");
@@ -131,6 +135,13 @@ static void init(void) {
 
   _pixels = malloc(_windowWidth * _windowHeight * sizeof *_pixels);
   assert(_pixels);
+}
+
+// Gestion des événements clavier
+static void keydown(int keycode) {
+  if(keycode == SDLK_p) {
+    _predator_visible = !_predator_visible;
+  }
 }
 
 // Call-back au clic (tous les boutons avec état down (1) ou up (0))
@@ -247,7 +258,9 @@ static inline void scene(GLboolean sm) {
   gl4dgDraw(_quad);
   gl4duSendMatrices();
   mobileDraw(_moineau);
-  predatorDraw(_rapace);
+  if (_predator_visible) {
+    predatorDraw(_rapace);
+  }
 }
 
 // Dessine dans le contexte OpenGL actif
