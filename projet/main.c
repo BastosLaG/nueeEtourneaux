@@ -22,6 +22,7 @@ static GLuint _smPID = 0;
 
 // Identifiant de notre étourneau
 static GLuint _moineau = 0;
+static GLuint _rapace = 0;
 
 // Quelques objets géométriques
 
@@ -74,7 +75,7 @@ static void init(void) {
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
 
   _moineau = assimpGenScene("models/étourneau_trop_bg_flat.obj");
-  _rapace = assimpGenScene("models/étourneau_trop_bg.obj");
+  _rapace   = assimpGenScene("models/étourneau_trop_bg_flat.obj");
   
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");
