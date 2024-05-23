@@ -45,7 +45,7 @@ Ce projet démontre le rendu d'objets mobiles dans une scène 3D en utilisant Op
 
 ### Contrôles du clavier
 
-- 
+- **P** : Permet l'apparition et la suppression de notre prédateur
 
 ## Structure des fichiers
 
