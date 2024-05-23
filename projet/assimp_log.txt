@@ -1,4 +1,4 @@
-Info,  T0: Load models/étourneau_trop_bg.obj
+Info,  T0: Load models/étourneau_trop_bg_flat.obj
 Info,  T0: Found a matching importer for this file format: Wavefront Object Importer.
 Info,  T0: Import root directory is 'models/'
 Info,  T0: Entering post processing pipeline
@@ -6,6 +6,5 @@ Info,  T0: TriangulateProcess finished. All polygons have been triangulated.
 Info,  T0: Points: 0, Lines: 0, Triangles: 1, Polygons: 0 (Meshes, X = removed)
 Info,  T0: FindInvalidDataProcess finished. Found issues ...
 Info,  T0: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T0: JoinVerticesProcess finished | Verts in: 1734 out: 807 | ~53.4602
-Info,  T0: Cache relevant are 1 meshes (868 faces). Average output ACMR is 1.09101
+Info,  T0: Cache relevant are 1 meshes (868 faces). Average output ACMR is 1.9977
 Info,  T0: Leaving post processing pipeline

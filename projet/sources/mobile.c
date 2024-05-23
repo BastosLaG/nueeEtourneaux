@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include "../headers/mobile.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 mobile_t * _mobile = NULL;
 static int _nb_mobiles = 0;
 static GLfloat _width = 1, _depth = 1;
@@ -88,16 +92,60 @@ void mobileMove(void) {
   }
 }
 
+// Fonction pour normaliser un vecteur
+void normalize(GLfloat *v) {
+  GLfloat length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  if (length != 0) {
+    v[0] /= length;
+    v[1] /= length;
+    v[2] /= length;
+  }
+}
+
+// Fonction pour calculer le produit scalaire de deux vecteurs
+GLfloat dotProduct(GLfloat *a, GLfloat *b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+// Fonction pour calculer le produit vectoriel de deux vecteurs
+void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result) {
+  result[0] = a[1] * b[2] - a[2] * b[1];
+  result[1] = a[2] * b[0] - a[0] * b[2];
+  result[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+// Fonction pour orienter le mobile selon sa direction de déplacement
+void orientMobile(int i) {
+  GLfloat direction[] = { _mobile[i].vx, _mobile[i].vy, _mobile[i].vz };
+  normalize(direction);
+
+  // Le vecteur de référence initial (ex : axe Z)
+  GLfloat reference[] = { 0.0f, 0.0f, 1.0f };
+
+  // Calcul de l'angle entre la direction et le vecteur de référence
+  GLfloat dot = dotProduct(reference, direction);
+  GLfloat angle = acos(dot) * 180.0f / M_PI;
+
+  // Calcul de l'axe de rotation (produit vectoriel entre la référence et la direction)
+  GLfloat axis[3];
+  crossProduct(reference, direction, axis);
+  normalize(axis);
+
+  // Appliquer la rotation au mobile
+  gl4duLoadIdentityf();
+  gl4duTranslatef(_mobile[i].x, _mobile[i].y, _mobile[i].z);
+  gl4duRotatef(angle, axis[0], axis[1], axis[2]);
+  // gl4duScalef(_mobile[i].r, _mobile[i].r, _mobile[i].r);
+}
+
 void mobileDraw(GLuint obj) {
   int i;
   GLint pId;
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
   for(i = 0; i < _nb_mobiles; i++) {
     gl4duPushMatrix();
-    gl4duTranslatef(_mobile[i].x, _mobile[i].y, _mobile[i].z);
-    gl4duScalef(_mobile[i].r, _mobile[i].r, _mobile[i].r);
+    orientMobile(i);
     gl4duSendMatrices();
-    gl4duPopMatrix();
     glUniform1i(glGetUniformLocation(pId, "id"), i + 3);
     glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _mobile[i].color);
     assimpDrawScene(obj);
