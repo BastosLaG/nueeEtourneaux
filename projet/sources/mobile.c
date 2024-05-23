@@ -48,12 +48,12 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].z = gl4dmSURand() * _depth - _mobile[i].r;
     _mobile[i].y = _depth;
     _mobile[i].vx = 3.0f * (gl4dmSURand() - 0.5f);
-    _mobile[i].vy = 3.0f * (gl4dmSURand() - 0.5f);
+    _mobile[i].vy = 3.0f * (gl4dmURand() - 0.5f);
     _mobile[i].vz = 3.0f * (gl4dmSURand() - 0.5f);
     // Définir la couleur bleue
-    _mobile[i].color[0] = 0.0f; // Rouge
-    _mobile[i].color[1] = 1.0f; // Vert
-    _mobile[i].color[2] = 0.0f; // Bleu
+    _mobile[i].color[0] = gl4dmURand(); // Rouge
+    _mobile[i].color[1] = gl4dmURand(); // Vert
+    _mobile[i].color[2] = gl4dmURand(); // Bleu
     _mobile[i].color[3] = 1.0f; // Alpha
     _mobile[i].freeze = GL_FALSE;
     _mobile[i].y_direction_inversee = GL_FALSE;
@@ -80,7 +80,7 @@ void springInit(int n) {
   for(i = 0; i < _nb_springs; i++) {
     _springs[i].a = rand() % _nb_mobiles;
     _springs[i].b = rand() % _nb_mobiles;
-    _springs[i].rest_length = 10.0f; // Longueur au repos arbitraire, peut être ajustée
+    _springs[i].rest_length = 10.0f;
     printf("Ressort %d - Entre mobiles %d et %d, Longueur au repos: %.2f\n", 
            i, _springs[i].a, _springs[i].b, _springs[i].rest_length);
   }

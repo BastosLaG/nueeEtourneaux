@@ -3,13 +3,13 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "../headers/mobile.h"
+#include "../headers/predateur.h"
 
 // Structure du prédateur pour stocker ses propriétés
 predator_t _predator;
 
 static void predateurUpdateTargetDirection(void);
 static GLfloat predateurDistance(void);
-
 static void frottements(GLfloat kx, GLfloat ky, GLfloat kz);
 static void predateurBoxCollider(void);
 static double get_dt(void);
@@ -33,6 +33,24 @@ void predatorInit(int nb_mobiles, GLfloat width, GLfloat height, GLfloat depth) 
   _predator.nb_mobiles = nb_mobiles;
   _predator.y_direction_inversee = GL_FALSE;
   predateurUpdateTargetDirection();
+}
+
+// Libérer les ressources du prédateur
+void predatorFree(void) {
+  // Réinitialiser les propriétés du prédateur
+  _predator.r = 0.0f;
+  _predator.x = 0.0f;
+  _predator.y = 0.0f;
+  _predator.z = 0.0f;
+  _predator.vx = 0.0f;
+  _predator.vy = 0.0f;
+  _predator.vz = 0.0f;
+  _predator.color[0] = 0.0f;
+  _predator.color[1] = 0.0f;
+  _predator.color[2] = 0.0f;
+  _predator.color[3] = 0.0f;
+  _predator.nb_mobiles = 0;
+  _predator.y_direction_inversee = GL_FALSE;
 }
 
 // Mettre à jour la position du prédateur en fonction de sa vitesse et de la direction de la cible
@@ -94,7 +112,6 @@ static void frottements(GLfloat kx, GLfloat ky, GLfloat kz) {
   if(vz < EPSILON)  _predator.vz = 0;
   else              _predator.vz = (vz - kz * vz) * SIGN(_predator.vz);
 }
-
 
 // Vérifier les collisions avec les limites et refléter la vitesse si nécessaire
 static void predateurBoxCollider(void) {
