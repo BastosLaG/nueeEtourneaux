@@ -34,7 +34,7 @@ static GLuint _idTex = 0;
 /*!\brief Texture recevant la shadow map */
 static GLuint _smTex = 0;
 /*!\brief nombre de mobiles créés dans la scène */
-static GLuint _nb_mobiles = 100;
+static GLuint _nb_mobiles = 10;
 /*!\brief identifiant du mobile sélectionné */
 static int _picked_mobile = -1;
 /*!\brief coordonnées du mobile sélectionné */
