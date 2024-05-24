@@ -60,6 +60,7 @@ static GLfloat _lumpos[] = { 9, 3, 0, 1 };
 // Variable de contrôle pour l'affichage du prédateur
 static GLboolean _predator_visible  = GL_FALSE;
 GLboolean _color_bird = GL_FALSE;
+static GLboolean _predator_view = GL_FALSE;
 
 // Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
@@ -142,8 +143,8 @@ static void init(void) {
 
 // Gestion des événements clavier
 static void keydown(int keycode) {
-  if(keycode == SDLK_p) {
-    if(_predator_visible) {
+  if (keycode == SDLK_p) {
+    if (_predator_visible) {
       predatorFree();
       _predator_visible = GL_FALSE;
     } else {
@@ -151,11 +152,14 @@ static void keydown(int keycode) {
       _predator_visible = GL_TRUE;
     }
   }
-  if(keycode == SDLK_c) {
+  if (keycode == SDLK_c) {
     _color_bird = !_color_bird;
   }
-  if(keycode == SDLK_v) {
+  if (keycode == SDLK_v) {
     _view_centroid = !_view_centroid;
+  }
+  if (keycode == SDLK_m) {
+    _predator_view = !_predator_view;
   }
 }
 
@@ -268,7 +272,9 @@ static inline void scene(GLboolean sm) {
     glUniform1i(glGetUniformLocation(_shPID, "smTex"), 0);
     gl4duBindMatrix("cameraViewMatrix");
     gl4duLoadIdentityf();
-    if (_view_centroid) {
+    if (_predator_view && _predator_visible) {
+      gl4duLookAtf(_predator.x, _predator.y, _predator.z, cx, cy, cz, 0, 1, 0); // Vue du prédateur
+    } else if (_view_centroid) {
       gl4duLookAtf(0, 4, 18, cx, cy, cz, 0, 1, 0); // Utiliser le centroid
     } else {
       gl4duLookAtf(0, 4, 18, 0, 2, 0, 0, 1, 0); // Vue par défaut
@@ -303,7 +309,6 @@ static inline void scene(GLboolean sm) {
     predatorDraw(_rapace);
   }
 }
-
 
 
 // Dessine dans le contexte OpenGL actif
