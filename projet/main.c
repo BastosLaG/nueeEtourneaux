@@ -68,7 +68,7 @@ static GLboolean _predator_view = GL_FALSE;
 
 // Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
-  if(!gl4duwCreateWindow(argc, argv, "GL4D - Picking", 0, 0, _windowWidth, _windowHeight, GL4DW_SHOWN))
+  if(!gl4duwCreateWindow(argc, argv, "GL4D - Les oiseaux qui volent en groupe", 0, 0, _windowWidth, _windowHeight, GL4DW_SHOWN))
     return 1;
   init();
   atexit(quit);
