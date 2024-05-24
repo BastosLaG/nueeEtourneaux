@@ -46,6 +46,9 @@ Ce projet démontre le rendu d'objets mobiles dans une scène 3D en utilisant Op
 ### Contrôles du clavier
 
 - **P** : Permet l'apparition et la suppression de notre prédateur
+- **m** : Ce met a la place du prédateur
+- **v** : Place la vue sur le centre de notre masse d'étourneaux
+- **c** : Change la couleur de nos étourneaux 
 
 ## Structure des fichiers
 
