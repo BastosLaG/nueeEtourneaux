@@ -266,7 +266,7 @@ static void applyBoidsRules(int i) {
   for(j = 0; j < _nb_mobiles; j++) {
     if(i == j) continue;
     d = distance(_mobile[i], _mobile[j]);
-    if(d < influenceDistance) {
+    if(d < influenceDistance && count <= NUM_NEIGHBORS) {
       centerX += _mobile[j].x;
       centerY += _mobile[j].y;
       centerZ += _mobile[j].z;
