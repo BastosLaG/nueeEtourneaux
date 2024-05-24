@@ -261,12 +261,12 @@ static void applyBoidsRules(int i) {
   GLfloat centerX = 0, centerY = 0, centerZ = 0;
   GLfloat separationX = 0, separationY = 0, separationZ = 0;
   GLfloat d;
-  GLfloat influenceDistance = _mobile[i].r * 4;
+  GLfloat influenceDistance = _mobile[i].r * 10;
 
   for(j = 0; j < _nb_mobiles; j++) {
     if(i == j) continue;
     d = distance(_mobile[i], _mobile[j]);
-    if(d < influenceDistance && count <= NUM_NEIGHBORS) {
+    if(d < influenceDistance) {
       centerX += _mobile[j].x;
       centerY += _mobile[j].y;
       centerZ += _mobile[j].z;
@@ -280,6 +280,7 @@ static void applyBoidsRules(int i) {
       }
       count++;
     }
+    if (count == NUM_NEIGHBORS) continue;
   }
 
   if(count > 0) {
