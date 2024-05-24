@@ -82,8 +82,8 @@ static void init(void) {
   _shPID  = gl4duCreateProgram("<vs>shaders/basic.vs", "<fs>shaders/basic.fs", NULL);
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
 
-  _moineau = assimpGenScene("models/étourneau_trop_bg_flat.obj");
-  _rapace = assimpGenScene("models/étourneau_trop_bg_flat.obj");
+  _moineau = assimpGenScene("models/étourneau_trop_bg.glb");
+  _rapace = assimpGenScene("models/étourneau_trop_bg.glb");
   
   gl4duGenMatrix(GL_FLOAT, "modelMatrix");
   gl4duGenMatrix(GL_FLOAT, "lightViewMatrix");

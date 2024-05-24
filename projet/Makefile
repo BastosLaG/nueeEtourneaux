@@ -53,6 +53,7 @@ LDFLAGS  += -lGL4Dummies $(shell sdl2-config --libs) -lSDL2_mixer -lSDL2_image -
 all: $(PROGNAME)
 $(PROGNAME): $(OBJ)
 	$(CC) $(OBJ) $(LDFLAGS) -o $(PROGNAME)
+	upx --best $(PROGNAME)
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 dist: distdir
