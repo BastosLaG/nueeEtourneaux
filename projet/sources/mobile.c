@@ -199,14 +199,16 @@ static void orientMobile(int i) {
 }
 
 // Dessine les mobiles
+// Dessine les mobiles
 void mobileDraw(GLuint obj) {
   int i;
   GLint pId;
-  GLfloat black[4] = {.05f, .0f, .1f, .2f}; // Declare black array outside of if statement
+  GLfloat black[4] = {.05f, .0f, .1f, .2f}; 
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
   for (i = 0; i < _nb_mobiles; i++) {
     gl4duPushMatrix();
     orientMobile(i);
+    gl4duScalef(0.2f, 0.2f, 0.2f); 
     gl4duSendMatrices();
     glUniform1i(glGetUniformLocation(pId, "id"), i + 3);
     if (_color_bird) {
@@ -214,11 +216,11 @@ void mobileDraw(GLuint obj) {
     } else {
       glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, black);
     }
-    // printf("Moineau %d - Couleur envoyée au shader: (%.2f, %.2f, %.2f, %.2f)\n", i, _mobile[i].color[0], _mobile[i].color[1], _mobile[i].color[2], _mobile[i].color[3]);
     assimpDrawScene(obj);
     gl4duPopMatrix();
   }
 }
+
 
 
 // Calcule la distance entre deux mobiles

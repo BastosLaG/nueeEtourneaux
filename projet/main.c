@@ -30,7 +30,7 @@ static GLuint _rapace = 0;
 static GLuint _sphere = 0, _quad = 0;
 
 // Scale du plan
-GLfloat _plan_s = 5.0f;
+GLfloat _plan_s = 8.0f;
 
 // Framebuffer Object et textures associées
 static GLuint _fbo = 0;
@@ -40,7 +40,7 @@ static GLuint _idTex = 0;
 static GLuint _smTex = 0;
 
 // Nombre de mobiles créés dans la scène
-static GLuint _nb_mobiles = 50;
+static GLuint _nb_mobiles = 500;
 
 // Identifiant et coordonnées du mobile sélectionné
 static int _picked_mobile = -1;

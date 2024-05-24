@@ -98,13 +98,14 @@ void predatorDraw(GLuint obj) {
   glGetIntegerv(GL_CURRENT_PROGRAM, &pId);
   gl4duPushMatrix();
   orientPredator();
-  gl4duScalef(2.0f, 2.0f, 2.0f);
+  gl4duScalef(0.5f, 0.5f, 0.5f);
   gl4duSendMatrices();
   // gl4duPopMatrix();
   glUniform4fv(glGetUniformLocation(pId, "couleur"), 1, _predator.color);
   // gl4dgDraw(obj);
   assimpDrawScene(obj);
 }
+
 
 static void frottements(GLfloat kx, GLfloat ky, GLfloat kz) {
   GLfloat vx = fabs(_predator.vx), vy = fabs(_predator.vy), vz = fabs(_predator.vz);

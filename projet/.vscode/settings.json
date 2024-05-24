@@ -58,6 +58,7 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "gl4df.h": "c",
-    "mobile.h": "c"
+    "mobile.h": "c",
+    "*.tcc": "c"
   }
 }
