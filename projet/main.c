@@ -14,6 +14,8 @@ static void motion(int x, int y);
 static void draw(void);
 static void quit(void);
 static void keydown(int keycode);
+static void resize(int width, int height);
+static void drawPredatorView(void);  // Ajoutez cette ligne
 
 // Dimensions de la fenêtre
 static int _windowWidth = 1280, _windowHeight = 720;
@@ -40,6 +42,8 @@ static GLuint _colorTex = 0;
 static GLuint _depthTex = 0;
 static GLuint _idTex = 0;
 static GLuint _smTex = 0;
+static GLuint _predatorFBO = 0;
+static GLuint _predatorTex = 0;
 
 // Nombre de mobiles créés dans la scène
 static GLuint _nb_mobiles = 500;
@@ -71,6 +75,7 @@ int main(int argc, char ** argv) {
   gl4duwMouseFunc(mouse);
   gl4duwMotionFunc(motion);
   gl4duwKeyDownFunc(keydown);
+  gl4duwResizeFunc(resize);  // Ajouter le gestionnaire de redimensionnement
   gl4duwIdleFunc(mobileMove);
   gl4duwDisplayFunc(draw);
   gl4duwMainLoop();
@@ -137,6 +142,49 @@ static void init(void) {
   // Création du Framebuffer Object
   glGenFramebuffers(1, &_fbo);
 
+  // Création et paramétrage de la Texture pour la vue du prédateur
+  glGenTextures(1, &_predatorTex);
+  glBindTexture(GL_TEXTURE_2D, _predatorTex);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth / 4, _windowHeight / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+  // Création du Framebuffer Object pour la vue du prédateur
+  glGenFramebuffers(1, &_predatorFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, _predatorFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _predatorTex, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  _pixels = malloc(_windowWidth * _windowHeight * sizeof *_pixels);
+  assert(_pixels);
+}
+
+// Fonction de redimensionnement
+static void resize(int width, int height) {
+  _windowWidth = width;
+  _windowHeight = height;
+  glViewport(0, 0, _windowWidth, _windowHeight);
+
+  // Mettre à jour les matrices de projection
+  gl4duBindMatrix("cameraProjectionMatrix");
+  gl4duLoadIdentityf();
+  gl4duFrustumf(-0.5, 0.5, -0.5 * _windowHeight / _windowWidth, 0.5 * _windowHeight / _windowWidth, 1.0, 50.0);
+
+  // Redimensionner les textures
+  glBindTexture(GL_TEXTURE_2D, _colorTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth, _windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+  glBindTexture(GL_TEXTURE_2D, _depthTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _windowWidth, _windowHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+
+  glBindTexture(GL_TEXTURE_2D, _idTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _windowWidth, _windowHeight, 0, GL_RED, GL_UNSIGNED_INT, NULL);
+
+  // Redimensionner la texture de la vue du prédateur
+  glBindTexture(GL_TEXTURE_2D, _predatorTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth / 4, _windowHeight / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+  free(_pixels);
   _pixels = malloc(_windowWidth * _windowHeight * sizeof *_pixels);
   assert(_pixels);
 }
@@ -162,7 +210,6 @@ static void keydown(int keycode) {
     _predator_view = !_predator_view;
   }
 }
-
 
 // Call-back au clic (tous les boutons avec état down (1) ou up (0))
 static void mouse(int button, int state, int x, int y) {
@@ -229,6 +276,7 @@ static void motion(int x, int y) {
     mobileSetCoords(_picked_mobile, ip);
   }
 }
+
 // Calcule le centroid de tous les oiseaux
 static void calculateCentroid(GLfloat *cx, GLfloat *cy, GLfloat *cz) {
   GLfloat sumX = 0, sumY = 0, sumZ = 0;
@@ -310,6 +358,22 @@ static inline void scene(GLboolean sm) {
   }
 }
 
+// Dessine la vue du prédateur
+static void drawPredatorView(void) {
+  glBindFramebuffer(GL_FRAMEBUFFER, _predatorFBO);
+  glViewport(0, 0, _windowWidth / 4, _windowHeight / 4);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  gl4duBindMatrix("cameraViewMatrix");
+  gl4duLoadIdentityf();
+  GLfloat cx, cy, cz;
+  calculateCentroid(&cx, &cy, &cz);
+  gl4duLookAtf(_predator.x, _predator.y, _predator.z, cx, cy, cz, 0, 1, 0);
+
+  scene(GL_FALSE);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 // Dessine dans le contexte OpenGL actif
 static void draw(void) {
@@ -352,6 +416,23 @@ static void draw(void) {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBlitFramebuffer(0, 0, _windowWidth, _windowHeight, 0, 0, _windowWidth, _windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
   glBlitFramebuffer(0, 0, _windowWidth, _windowHeight, 0, 0, _windowWidth, _windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+  // Dessiner la vue du prédateur
+  if (_predator_visible) {
+    drawPredatorView();
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glViewport(_windowWidth - _windowWidth / 4 - 10, 10, _windowWidth / 4, _windowHeight / 4);
+    glBindTexture(GL_TEXTURE_2D, _predatorTex);
+    glEnable(GL_TEXTURE_2D);
+    gl4duGenMatrix(GL_FLOAT, "miniMapMatrix");
+    gl4duBindMatrix("miniMapMatrix");
+    gl4duLoadIdentityf();
+    gl4duScalef(1.0f, 1.0f, 1.0f);
+    gl4duSendMatrices();
+    gl4dgDraw(_quad);
+    glDisable(GL_TEXTURE_2D);
+  }
 }
 
 // Libère les éléments utilisés au moment de sortir du programme (atexit)
@@ -371,5 +452,10 @@ static void quit(void) {
   gl4duClean(GL4DU_ALL);
   if (_predator_visible) {
     predatorFree();
+  }
+  if(_predatorFBO) {
+    glDeleteTextures(1, &_predatorTex);
+    glDeleteFramebuffers(1, &_predatorFBO);
+    _predatorFBO = 0;
   }
 }
