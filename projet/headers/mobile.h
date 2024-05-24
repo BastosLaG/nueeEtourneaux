@@ -36,6 +36,8 @@ typedef struct mobile_t {
   GLfloat targetX, targetY, targetZ;
 } mobile_t;
 
+extern GLboolean _color_bird;
+
 typedef struct spring_t {
   int a, b; // Indices des deux mobiles reliés par le ressort
   GLfloat rest_length; // Longueur au repos du ressort

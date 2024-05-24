@@ -56,7 +56,8 @@ static GLfloat _lumpos[] = { 9, 3, 0, 1 };
 #define SHADOW_MAP_SIDE 512
 
 // Variable de contrôle pour l'affichage du prédateur
-static GLuint _predator_visible = 0;
+static GLboolean _predator_visible  = GL_FALSE;
+GLboolean _color_bird = GL_FALSE;
 
 // Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
@@ -142,11 +143,14 @@ static void keydown(int keycode) {
   if(keycode == SDLK_p) {
     if(_predator_visible) {
       predatorFree();
-      _predator_visible = 0;
+      _predator_visible = GL_FALSE;
     } else {
       predatorInit(_nb_mobiles, _plan_s, HAUTEUR_SEUIL, _plan_s);
-      _predator_visible = 1;
+      _predator_visible = GL_TRUE;
     }
+  }
+  if(keycode == SDLK_c) {
+    _color_bird = !_color_bird;
   }
 }
 
