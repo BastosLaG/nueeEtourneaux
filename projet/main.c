@@ -29,6 +29,8 @@ static GLuint _rapace = 0;
 // Quelques objets géométriques
 static GLuint _sphere = 0, _quad = 0;
 
+static GLboolean _view_centroid = GL_FALSE;
+
 // Scale du plan
 GLfloat _plan_s = 8.0f;
 
@@ -152,7 +154,11 @@ static void keydown(int keycode) {
   if(keycode == SDLK_c) {
     _color_bird = !_color_bird;
   }
+  if(keycode == SDLK_v) {
+    _view_centroid = !_view_centroid;
+  }
 }
+
 
 // Call-back au clic (tous les boutons avec état down (1) ou up (0))
 static void mouse(int button, int state, int x, int y) {
@@ -219,16 +225,37 @@ static void motion(int x, int y) {
     mobileSetCoords(_picked_mobile, ip);
   }
 }
+// Calcule le centroid de tous les oiseaux
+static void calculateCentroid(GLfloat *cx, GLfloat *cy, GLfloat *cz) {
+  GLfloat sumX = 0, sumY = 0, sumZ = 0;
+  for (int i = 0; i < _nb_mobiles; i++) {
+    sumX += _mobile[i].x;
+    sumY += _mobile[i].y;
+    sumZ += _mobile[i].z;
+  }
+  *cx = sumX / _nb_mobiles;
+  *cy = sumY / _nb_mobiles;
+  *cz = sumZ / _nb_mobiles;
+}
 
 // La scène est soit dessinée du point de vue de la lumière (sm = GL_TRUE donc shadow map) soit dessinée du point de vue de la caméra
 static inline void scene(GLboolean sm) {
   glEnable(GL_CULL_FACE);
-  if(sm) {
+
+  // Calculer le centroid
+  GLfloat cx, cy, cz;
+  calculateCentroid(&cx, &cy, &cz);
+
+  if (sm) {
     glCullFace(GL_FRONT);
     glUseProgram(_smPID);
     gl4duBindMatrix("lightViewMatrix");
     gl4duLoadIdentityf();
-    gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], 0, 2, 0, 0, 1, 0);
+    if (_view_centroid) {
+      gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], cx, cy, cz, 0, 1, 0); // Utiliser le centroid
+    } else {
+      gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], 0, 2, 0, 0, 1, 0); // Vue par défaut
+    }
     gl4duBindMatrix("modelMatrix");
     gl4duLoadIdentityf();
   } else {
@@ -241,8 +268,11 @@ static inline void scene(GLboolean sm) {
     glUniform1i(glGetUniformLocation(_shPID, "smTex"), 0);
     gl4duBindMatrix("cameraViewMatrix");
     gl4duLoadIdentityf();
-    gl4duLookAtf(0, 4, 18, 0, 2, 0, 0, 1, 0);
-    // Lumière positionnelle
+    if (_view_centroid) {
+      gl4duLookAtf(0, 4, 18, cx, cy, cz, 0, 1, 0); // Utiliser le centroid
+    } else {
+      gl4duLookAtf(0, 4, 18, 0, 2, 0, 0, 1, 0); // Vue par défaut
+    }
     mat = gl4duGetMatrixData();
     MMAT4XVEC4(lp, mat, _lumpos);
     MVEC4WEIGHT(lp);
@@ -260,6 +290,7 @@ static inline void scene(GLboolean sm) {
     glUniform4fv(glGetUniformLocation(_shPID, "couleur"), 1, vert);
     glUniform1i(glGetUniformLocation(_shPID, "id"), 1);
   }
+
   gl4duPushMatrix(); {
     gl4duRotatef(-90, 1, 0, 0);
     gl4duScalef(_plan_s, _plan_s, _plan_s);
@@ -272,6 +303,8 @@ static inline void scene(GLboolean sm) {
     predatorDraw(_rapace);
   }
 }
+
+
 
 // Dessine dans le contexte OpenGL actif
 static void draw(void) {

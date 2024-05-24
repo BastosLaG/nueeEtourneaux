@@ -59,6 +59,7 @@
   "files.associations": {
     "gl4df.h": "c",
     "mobile.h": "c",
-    "*.tcc": "c"
+    "*.tcc": "c",
+    "predateur.h": "c"
   }
 }
