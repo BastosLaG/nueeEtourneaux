@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <SDL_mixer.h>
 #include <GL4D/gl4df.h>
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4duw_SDL2.h>
 
+#include <SDL2/SDL_ttf.h>
 
 //test
 // Déclaration des fonctions
@@ -17,10 +19,15 @@ static void draw(void);
 static void quit(void);
 static void keydown(int keycode);
 static void resize(int width, int height);
-static void drawPredatorView(void);  // Ajoutez cette ligne
+static void drawPredatorView(void);
+static void initAudio(const char * filename);
+static void mixCallback(void *udata, Uint8 *stream, int len);
+
+#define SHADOW_MAP_SIDE 512
+#define ECHANTILLONS 1024
 
 // Dimensions de la fenêtre
-static int _windowWidth = 1280, _windowHeight = 720;
+static int _wW = 1280, _wH = 720;
 
 // Identifiants des programmes GLSL
 static GLuint _shPID = 0;
@@ -60,17 +67,20 @@ static GLfloat * _pixels = NULL;
 // Position de la lumière, relative aux objets
 static GLfloat _lumpos[] = { 9, 3, 0, 1 };
 
-// Taille de la shadow map
-#define SHADOW_MAP_SIDE 512
+
 
 // Variable de contrôle pour l'affichage du prédateur
 static GLboolean _predator_visible  = GL_FALSE;
-GLboolean _color_bird = GL_FALSE;
 static GLboolean _predator_view = GL_FALSE;
+GLboolean _color_bird = GL_FALSE;
+
+static Mix_Music * _mmusic = NULL;
+static char _filename[128] = "audio/son.mid";
+static GLfloat _hauteurs[ECHANTILLONS];
 
 // Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
-  if(!gl4duwCreateWindow(argc, argv, "GL4D - Les oiseaux qui volent en groupe", 0, 0, _windowWidth, _windowHeight, GL4DW_SHOWN))
+  if(!gl4duwCreateWindow(argc, argv, "GL4D - Les oiseaux qui volent en groupe", 0, 0, _wW, _wH, GL4DW_SHOWN))
     return 1;
   init();
   atexit(quit);
@@ -86,6 +96,9 @@ int main(int argc, char ** argv) {
 
 // Initialise les paramètres OpenGL
 static void init(void) {
+
+  initAudio(_filename);
+
   glEnable(GL_DEPTH_TEST);
   _shPID  = gl4duCreateProgram("<vs>shaders/basic.vs", "<fs>shaders/basic.fs", NULL);
   _smPID  = gl4duCreateProgram("<vs>shaders/shadowMap.vs", "<fs>shaders/shadowMap.fs", NULL);
@@ -100,13 +113,13 @@ static void init(void) {
   gl4duGenMatrix(GL_FLOAT, "cameraProjectionMatrix");
   gl4duGenMatrix(GL_FLOAT, "cameraPVMMatrix");
 
-  glViewport(0, 0, _windowWidth, _windowHeight);
+  glViewport(0, 0, _wW, _wH);
   gl4duBindMatrix("lightProjectionMatrix");
   gl4duLoadIdentityf();
   gl4duFrustumf(-1, 1, -1, 1, 1.5, 50.0);
   gl4duBindMatrix("cameraProjectionMatrix");
   gl4duLoadIdentityf();
-  gl4duFrustumf(-0.5, 0.5, -0.5 * _windowHeight / _windowWidth, 0.5 * _windowHeight / _windowWidth, 1.0, 50.0);
+  gl4duFrustumf(-0.5, 0.5, -0.5 * _wH / _wW, 0.5 * _wH / _wW, 1.0, 50.0);
   gl4duBindMatrix("modelMatrix");
 
   _sphere = gl4dgGenSpheref(30, 30);
@@ -125,21 +138,21 @@ static void init(void) {
   glBindTexture(GL_TEXTURE_2D, _colorTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth, _windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   // Création et paramétrage de la Texture recevant la profondeur
   glGenTextures(1, &_depthTex);
   glBindTexture(GL_TEXTURE_2D, _depthTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _windowWidth, _windowHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _wW, _wH, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 
   // Création et paramétrage de la Texture recevant les identifiants d'objets
   glGenTextures(1, &_idTex);
   glBindTexture(GL_TEXTURE_2D, _idTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _windowWidth, _windowHeight, 0, GL_RED, GL_UNSIGNED_INT, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _wW, _wH, 0, GL_RED, GL_UNSIGNED_INT, NULL);
 
   // Création du Framebuffer Object
   glGenFramebuffers(1, &_fbo);
@@ -149,7 +162,7 @@ static void init(void) {
   glBindTexture(GL_TEXTURE_2D, _predatorTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth / 4, _windowHeight / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW / 4, _wH / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   // Création du Framebuffer Object pour la vue du prédateur
   glGenFramebuffers(1, &_predatorFBO);
@@ -157,37 +170,37 @@ static void init(void) {
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _predatorTex, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  _pixels = malloc(_windowWidth * _windowHeight * sizeof *_pixels);
+  _pixels = malloc(_wW * _wH * sizeof *_pixels);
   assert(_pixels);
 }
 
 // Fonction de redimensionnement
 static void resize(int width, int height) {
-  _windowWidth = width;
-  _windowHeight = height;
-  glViewport(0, 0, _windowWidth, _windowHeight);
+  _wW = width;
+  _wH = height;
+  glViewport(0, 0, _wW, _wH);
 
   // Mettre à jour les matrices de projection
   gl4duBindMatrix("cameraProjectionMatrix");
   gl4duLoadIdentityf();
-  gl4duFrustumf(-0.5, 0.5, -0.5 * _windowHeight / _windowWidth, 0.5 * _windowHeight / _windowWidth, 1.0, 50.0);
+  gl4duFrustumf(-0.5, 0.5, -0.5 * _wH / _wW, 0.5 * _wH / _wW, 1.0, 50.0);
 
   // Redimensionner les textures
   glBindTexture(GL_TEXTURE_2D, _colorTex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth, _windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   glBindTexture(GL_TEXTURE_2D, _depthTex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _windowWidth, _windowHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _wW, _wH, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 
   glBindTexture(GL_TEXTURE_2D, _idTex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _windowWidth, _windowHeight, 0, GL_RED, GL_UNSIGNED_INT, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _wW, _wH, 0, GL_RED, GL_UNSIGNED_INT, NULL);
 
   // Redimensionner la texture de la vue du prédateur
   glBindTexture(GL_TEXTURE_2D, _predatorTex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth / 4, _windowHeight / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW / 4, _wH / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   free(_pixels);
-  _pixels = malloc(_windowWidth * _windowHeight * sizeof *_pixels);
+  _pixels = malloc(_wW * _wH * sizeof *_pixels);
   assert(_pixels);
 }
 
@@ -216,11 +229,11 @@ static void keydown(int keycode) {
 // Call-back au clic (tous les boutons avec état down (1) ou up (0))
 static void mouse(int button, int state, int x, int y) {
   if(button == GL4D_BUTTON_LEFT) {
-    y = _windowHeight - y;
+    y = _wH - y;
     glBindTexture(GL_TEXTURE_2D, _idTex);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, _pixels);
-    if(x >= 0 && x < _windowWidth && y >=0 && y < _windowHeight)
-      _picked_mobile = (int)((_nb_mobiles + 2.0f) * _pixels[y * _windowWidth + x]) - 3;
+    if(x >= 0 && x < _wW && y >=0 && y < _wH)
+      _picked_mobile = (int)((_nb_mobiles + 2.0f) * _pixels[y * _wW + x]) - 3;
     if(_picked_mobile >= 0 && _picked_mobile < _nb_mobiles) {
       mobileSetFreeze(_picked_mobile, state);
       if(state) {
@@ -254,8 +267,8 @@ static void motion(int x, int y) {
   if(_picked_mobile >= 0 && _picked_mobile < _nb_mobiles) {
     GLfloat m[16], tmpp[16], tmpm[16], * gl4dm;
     // p est la coordonnée de la souris entre -1 et +1
-    GLfloat p[] = { 2.0f * x / (GLfloat)_windowWidth - 1.0f,
-                    -(2.0f * y / (GLfloat)_windowHeight - 1.0f), 
+    GLfloat p[] = { 2.0f * x / (GLfloat)_wW - 1.0f,
+                    -(2.0f * y / (GLfloat)_wH - 1.0f), 
                     0.0f, 1.0 }, ip[4];
     // Copie de la matrice de projection dans tmpp
     gl4duBindMatrix("cameraProjectionMatrix");
@@ -290,6 +303,34 @@ static void calculateCentroid(GLfloat *cx, GLfloat *cy, GLfloat *cz) {
   *cx = sumX / _nb_mobiles;
   *cy = sumY / _nb_mobiles;
   *cz = sumZ / _nb_mobiles;
+}
+
+// Musique
+static void mixCallback(void *udata, Uint8 *stream, int len) {
+  int i;
+  Sint16 *s = (Sint16 *)stream;
+  if(len >= 2 * ECHANTILLONS)
+    for(i = 0; i < ECHANTILLONS; i++)
+      _hauteurs[i] = _wH / 2 + (_wH / 2) * s[i] / ((1 << 15) - 1.0);
+  return;
+}
+static void initAudio(const char * filename) {
+  int mixFlags = MIX_INIT_OGG | MIX_INIT_MP3 | MIX_INIT_MOD, res;
+  res = Mix_Init(mixFlags);
+  if( (res & mixFlags) != mixFlags ) {
+    fprintf(stderr, "Mix_Init: Erreur lors de l'initialisation de la bibliotheque SDL_Mixer\n");
+    fprintf(stderr, "Mix_Init: %s\n", Mix_GetError());
+    //exit(3); commenté car ne réagit correctement sur toutes les architectures
+  }
+  if(Mix_OpenAudio(44100, AUDIO_S16LSB, 2, 1024) < 0)
+    exit(4);
+  if(!(_mmusic = Mix_LoadMUS(filename))) {
+    fprintf(stderr, "Erreur lors du Mix_LoadMUS: %s\n", Mix_GetError());
+    exit(5);
+  }
+  Mix_SetPostMix(mixCallback, NULL);
+  if(!Mix_PlayingMusic())
+    Mix_PlayMusic(_mmusic, -1);
 }
 
 // La scène est soit dessinée du point de vue de la lumière (sm = GL_TRUE donc shadow map) soit dessinée du point de vue de la caméra
@@ -363,7 +404,7 @@ static inline void scene(GLboolean sm) {
 // Dessine la vue du prédateur
 static void drawPredatorView(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, _predatorFBO);
-  glViewport(0, 0, _windowWidth / 4, _windowHeight / 4);
+  glViewport(0, 0, _wW / 4, _wH / 4);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   gl4duBindMatrix("cameraViewMatrix");
@@ -393,14 +434,14 @@ static void draw(void) {
   glBindTexture(GL_TEXTURE_2D, _smTex);
   glGetTexImage(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, _pixels);
   glBindTexture(GL_TEXTURE_2D, _colorTex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _windowWidth, _windowHeight, 0, GL_RED, GL_FLOAT, _pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RED, GL_FLOAT, _pixels);
   gl4dfConvTex2Frame(_colorTex);
 
   // Paramétrer le fbo pour 2 rendus couleurs + un (autre) depth
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, _idTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
-  glViewport(0, 0, _windowWidth, _windowHeight);
+  glViewport(0, 0, _wW, _wH);
   // Un seul rendu GL_COLOR_ATTACHMENT1 + effacement 0
   glDrawBuffers(1, &renderings[1]);
   glClearColor(0, 0, 0, 0);
@@ -416,15 +457,15 @@ static void draw(void) {
 
   // Copie du fbo à l'écran
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBlitFramebuffer(0, 0, _windowWidth, _windowHeight, 0, 0, _windowWidth, _windowHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  glBlitFramebuffer(0, 0, _windowWidth, _windowHeight, 0, 0, _windowWidth, _windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+  glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
   // Dessiner la vue du prédateur
   if (_predator_visible) {
     drawPredatorView();
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glViewport(_windowWidth - _windowWidth / 4 - 10, 10, _windowWidth / 4, _windowHeight / 4);
+    glViewport(_wW - _wW / 4 - 10, 10, _wW / 4, _wH / 4);
     glBindTexture(GL_TEXTURE_2D, _predatorTex);
     glEnable(GL_TEXTURE_2D);
     gl4duGenMatrix(GL_FLOAT, "miniMapMatrix");
