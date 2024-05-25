@@ -7,6 +7,8 @@
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4duw_SDL2.h>
 
+
+//test
 // Déclaration des fonctions
 static void init(void);
 static void mouse(int button, int state, int x, int y);
