@@ -60,6 +60,7 @@
     "gl4df.h": "c",
     "mobile.h": "c",
     "*.tcc": "c",
-    "predateur.h": "c"
+    "predateur.h": "c",
+    "assimp.h": "c"
   }
 }

@@ -104,24 +104,39 @@ void mobileSetCoords(GLuint id, GLfloat * coords) {
 }
 
 // Met à jour les positions et états des mobiles
+GLboolean useBoids = GL_TRUE;
+
 void mobileMove(void) {
   int i;
   double dt = get_dt(), d;
 
   predatorMove(_plan_s, HAUTEUR_SEUIL, _plan_s);
 
-  applySpringForces();
+  if (useBoids) {
+    for(i = 0; i < _nb_mobiles; i++) {
+      if(_mobile[i].freeze) continue;
 
-  for(i = 0; i < _nb_mobiles; i++) {
-    if(_mobile[i].freeze) continue;
+      applyBoidsRules(i);
+      updateTargetDirection(i);
+      avoidPredator(i);
+      update_move(i, dt);
+      collision_collback(i, d);
+    }
+  } else {
+    applySpringForces();
 
-    // applyBoidsRules(i);
-    updateTargetDirection(i);
-    avoidPredator(i);
-    update_move(i, dt);
-    collision_collback(i, d);
+    for(i = 0; i < _nb_mobiles; i++) {
+      if(_mobile[i].freeze) continue;
+
+      updateTargetDirection(i);
+      avoidPredator(i);
+      update_move(i, dt);
+      collision_collback(i, d);
+    }
   }
 }
+
+
 
 // Applique les forces des ressorts
 static void applySpringForces(void) {
@@ -256,54 +271,56 @@ static double get_dt(void) {
 }
 
 // Applique les règles des boids pour un mobile donné
-// static void applyBoidsRules(int i) {
-//   int j, count = 0;
-//   GLfloat avgVx = 0, avgVy = 0, avgVz = 0;
-//   GLfloat centerX = 0, centerY = 0, centerZ = 0;
-//   GLfloat separationX = 0, separationY = 0, separationZ = 0;
-//   GLfloat d;
-//   GLfloat influenceDistance = _mobile[i].r * 10;
+void applyBoidsRules(int i) {
+  int j, count = 0;
+  GLfloat avgVx = 0, avgVy = 0, avgVz = 0;
+  GLfloat centerX = 0, centerY = 0, centerZ = 0;
+  GLfloat separationX = 0, separationY = 0, separationZ = 0;
+  GLfloat d;
+  GLfloat influenceDistance = _mobile[i].r * 10;
 
-//   for(j = 0; j < _nb_mobiles; j++) {
-//     if(i == j) continue;
-//     d = distance(_mobile[i], _mobile[j]);
-//     if(d < influenceDistance) {
-//       centerX += _mobile[j].x;
-//       centerY += _mobile[j].y;
-//       centerZ += _mobile[j].z;
-//       avgVx += _mobile[j].vx;
-//       avgVy += _mobile[j].vy;
-//       avgVz += _mobile[j].vz;
-//       if(d < _mobile[i].r * 3) {
-//         separationX += _mobile[i].x - _mobile[j].x;
-//         separationY += _mobile[i].y - _mobile[j].y;
-//         separationZ += _mobile[i].z - _mobile[j].z;
-//       }
-//       count++;
-//     }
-//     if (count == NUM_NEIGHBORS) continue;
-//   }
+  for(j = 0; j < _nb_mobiles; j++) {
+    if(i == j) continue;
+    d = distance(_mobile[i], _mobile[j]);
+    if(d < influenceDistance) {
+      centerX += _mobile[j].x;
+      centerY += _mobile[j].y;
+      centerZ += _mobile[j].z;
+      avgVx += _mobile[j].vx;
+      avgVy += _mobile[j].vy;
+      avgVz += _mobile[j].vz;
+      if(d < _mobile[i].r * 3) {
+        separationX += _mobile[i].x - _mobile[j].x;
+        separationY += _mobile[i].y - _mobile[j].y;
+        separationZ += _mobile[i].z - _mobile[j].z;
+      }
+      count++;
+    }
+    if (count == NUM_NEIGHBORS) continue;
+  }
 
-//   if(count > 0) {
-//     centerX /= count;
-//     centerY /= count;
-//     centerZ /= count;
-//     _mobile[i].vx += (centerX - _mobile[i].x) * (COHESION_WEIGHT / 2);
-//     _mobile[i].vy += (centerY - _mobile[i].y) * (COHESION_WEIGHT / 2);
-//     _mobile[i].vz += (centerZ - _mobile[i].z) * (COHESION_WEIGHT / 2);
+  if(count > 0) {
+    centerX /= count;
+    centerY /= count;
+    centerZ /= count;
+    _mobile[i].vx += (centerX - _mobile[i].x) * (COHESION_WEIGHT / 2);
+    _mobile[i].vy += (centerY - _mobile[i].y) * (COHESION_WEIGHT / 2);
+    _mobile[i].vz += (centerZ - _mobile[i].z) * (COHESION_WEIGHT / 2);
 
-//     avgVx /= count;
-//     avgVy /= count;
-//     avgVz /= count;
-//     _mobile[i].vx += (avgVx - _mobile[i].vx) * ALIGNMENT_WEIGHT;
-//     _mobile[i].vy += (avgVy - _mobile[i].vy) * ALIGNMENT_WEIGHT;
-//     _mobile[i].vz += (avgVz - _mobile[i].vz) * ALIGNMENT_WEIGHT;
+    avgVx /= count;
+    avgVy /= count;
+    avgVz /= count;
+    _mobile[i].vx += (avgVx - _mobile[i].vx) * ALIGNMENT_WEIGHT;
+    _mobile[i].vy += (avgVy - _mobile[i].vy) * ALIGNMENT_WEIGHT;
+    _mobile[i].vz += (avgVz - _mobile[i].vz) * ALIGNMENT_WEIGHT;
 
-//     _mobile[i].vx += separationX * (SEPARATION_WEIGHT * 2);
-//     _mobile[i].vy += separationY * (SEPARATION_WEIGHT * 2);
-//     _mobile[i].vz += separationZ * (SEPARATION_WEIGHT * 2);
-//   }
-// }
+    _mobile[i].vx += separationX * (SEPARATION_WEIGHT * 2);
+    _mobile[i].vy += separationY * (SEPARATION_WEIGHT * 2);
+    _mobile[i].vz += separationZ * (SEPARATION_WEIGHT * 2);
+  }
+}
+
+
 
 // Évite le prédateur pour un mobile donné
 static void avoidPredator(int i) {

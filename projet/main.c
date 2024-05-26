@@ -42,6 +42,7 @@ static GLuint _sphere = 0, _quad = 0;
 
 static GLboolean _view_centroid = GL_FALSE;
 
+
 // Scale du plan
 GLfloat _plan_s = 8.0f;
 
@@ -223,7 +224,13 @@ static void keydown(int keycode) {
   if (keycode == SDLK_m) {
     _predator_view = !_predator_view;
   }
+  if (keycode == SDLK_b) {
+    useBoids = !useBoids;
+    printf("useBoids: %d\n", useBoids); // Message de débogage
+  }
 }
+
+
 
 // Call-back au clic (tous les boutons avec état down (1) ou up (0))
 static void mouse(int button, int state, int x, int y) {

@@ -45,6 +45,7 @@ typedef struct spring_t {
 
 extern mobile_t * _mobile;
 extern spring_t * _springs;
+extern GLboolean useBoids;
 
 void mobileInit(int n, GLfloat width, GLfloat depth);
 void mobileSetFreeze(GLuint id, GLboolean freeze);
@@ -53,5 +54,6 @@ void mobileSetCoords(GLuint id, GLfloat * coords);
 void mobileMove(void);
 void mobileDraw(GLuint obj);
 void springInit(int n);
+void applyBoidsRules(int i);
 
 #endif
