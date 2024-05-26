@@ -13,8 +13,6 @@
 //test
 // Déclaration des fonctions
 static void init(void);
-static void mouse(int button, int state, int x, int y);
-static void motion(int x, int y);
 static void draw(void);
 static void quit(void);
 static void keydown(int keycode);
@@ -58,10 +56,6 @@ static GLuint _predatorTex = 0;
 // Nombre de mobiles créés dans la scène
 static GLuint _nb_mobiles = 500;
 
-// Identifiant et coordonnées du mobile sélectionné
-static int _picked_mobile = -1;
-static GLfloat _picked_mobile_coords[4] = {0};
-
 // Copie CPU de la mémoire texture d'identifiants
 static GLfloat * _pixels = NULL;
 
@@ -84,10 +78,8 @@ int main(int argc, char ** argv) {
     return 1;
   init();
   atexit(quit);
-  gl4duwMouseFunc(mouse);
-  gl4duwMotionFunc(motion);
   gl4duwKeyDownFunc(keydown);
-  gl4duwResizeFunc(resize);  // Ajouter le gestionnaire de redimensionnement
+  gl4duwResizeFunc(resize); 
   gl4duwIdleFunc(mobileMove);
   gl4duwDisplayFunc(draw);
   gl4duwMainLoop();
@@ -226,75 +218,6 @@ static void keydown(int keycode) {
   }
   if (keycode == SDLK_b) {
     useBoids = !useBoids;
-    printf("useBoids: %d\n", useBoids); // Message de débogage
-  }
-}
-
-
-
-// Call-back au clic (tous les boutons avec état down (1) ou up (0))
-static void mouse(int button, int state, int x, int y) {
-  if(button == GL4D_BUTTON_LEFT) {
-    y = _wH - y;
-    glBindTexture(GL_TEXTURE_2D, _idTex);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, _pixels);
-    if(x >= 0 && x < _wW && y >=0 && y < _wH)
-      _picked_mobile = (int)((_nb_mobiles + 2.0f) * _pixels[y * _wW + x]) - 3;
-    if(_picked_mobile >= 0 && _picked_mobile < _nb_mobiles) {
-      mobileSetFreeze(_picked_mobile, state);
-      if(state) {
-        // Récupération de la coordonnée espace-écran du mobile
-        GLfloat m[16], tmpp[16], tmpm[16], * gl4dm;
-        GLfloat mcoords[] = {0, 0, 0, 1};
-        // Récupération des coordonnées spatiales du mobile
-        mobileGetCoords(_picked_mobile, mcoords);
-        // Copie de la matrice de projection dans tmpp
-        gl4duBindMatrix("cameraProjectionMatrix");
-        gl4dm = gl4duGetMatrixData();
-        memcpy(tmpp, gl4dm, sizeof tmpp);
-        // Copie de la matrice de vue dans tmpm
-        gl4duBindMatrix("cameraViewMatrix");
-        gl4dm = gl4duGetMatrixData();
-        memcpy(tmpm, gl4dm, sizeof tmpm);
-        // m est tmpp x tmpm
-        MMAT4XMAT4(m, tmpp, tmpm);
-        // Modélisation et projection de la coordonnée du mobile dans _picked_mobile_coords
-        MMAT4XVEC4(_picked_mobile_coords, m, mcoords);
-        MVEC4WEIGHT(_picked_mobile_coords);
-      }
-    }
-    if(!state)
-      _picked_mobile = -1;
-  }
-}
-
-// Call-back lors du drag souris
-static void motion(int x, int y) {
-  if(_picked_mobile >= 0 && _picked_mobile < _nb_mobiles) {
-    GLfloat m[16], tmpp[16], tmpm[16], * gl4dm;
-    // p est la coordonnée de la souris entre -1 et +1
-    GLfloat p[] = { 2.0f * x / (GLfloat)_wW - 1.0f,
-                    -(2.0f * y / (GLfloat)_wH - 1.0f), 
-                    0.0f, 1.0 }, ip[4];
-    // Copie de la matrice de projection dans tmpp
-    gl4duBindMatrix("cameraProjectionMatrix");
-    gl4dm = gl4duGetMatrixData();
-    memcpy(tmpp, gl4dm, sizeof tmpp);
-    // Copie de la matrice de vue dans tmpm
-    gl4duBindMatrix("cameraViewMatrix");
-    gl4dm = gl4duGetMatrixData();
-    memcpy(tmpm, gl4dm, sizeof tmpm);
-    // m est tmpp x tmpm
-    MMAT4XMAT4(m, tmpp, tmpm);
-    // Inversion de m
-    MMAT4INVERSE(m);
-    // Ajout de la profondeur à l'écran du mobile comme profondeur du clic
-    p[2] = _picked_mobile_coords[2];
-    // ip est la transformée inverse de la coordonnée du clic (donc coordonnée spatiale du clic)
-    MMAT4XVEC4(ip, m, p);
-    MVEC4WEIGHT(ip);
-    // Affectation de ip comme nouvelle coordonnée spatiale du mobile
-    mobileSetCoords(_picked_mobile, ip);
   }
 }
 
@@ -354,7 +277,7 @@ static inline void scene(GLboolean sm) {
 
   // Calculer le centroid
   GLfloat cx, cy, cz;
-  GLfloat a, b, c;
+  GLfloat a;
   calculateCentroid(&cx, &cy, &cz);
 
   if (sm) {
@@ -363,9 +286,9 @@ static inline void scene(GLboolean sm) {
     gl4duBindMatrix("lightViewMatrix");
     gl4duLoadIdentityf();
     if (_view_centroid) {
-      gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], cx, cy, cz, 0, 1, 0); // Utiliser le centroid
+      gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], cx, cy, cz, 0, 1, 0);
     } else {
-      gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], 0, 2, 0, 0, 1, 0); // Vue par défaut
+      gl4duLookAtf(_lumpos[0], _lumpos[1], _lumpos[2], 0, 2, 0, 0, 1, 0);
     }
     gl4duBindMatrix("modelMatrix");
     gl4duLoadIdentityf();
@@ -380,11 +303,11 @@ static inline void scene(GLboolean sm) {
     gl4duBindMatrix("cameraViewMatrix");
     gl4duLoadIdentityf();
     if (_predator_view && _predator_visible) {
-      gl4duLookAtf(_predator.x, _predator.y, _predator.z, cx, cy, cz, 0, 1, 0); // Vue du prédateur
+      gl4duLookAtf(_predator.x, _predator.y, _predator.z, cx, cy, cz, 0, 1, 0); 
     } else if (_view_centroid) {
-      gl4duLookAtf(0, 4, 18, cx, cy, cz, 0, 1, 0); // Utiliser le centroid
+      gl4duLookAtf(0, 4, 18, cx, cy, cz, 0, 1, 0); 
     } else {
-      gl4duLookAtf(0, 4, 18, 0, 2, 0, 0, 1, 0); // Vue par défaut
+      gl4duLookAtf(0, 4, 18, 0, 2, 0, 0, 1, 0); 
     }
     mat = gl4duGetMatrixData();
     MMAT4XVEC4(lp, mat, _lumpos);

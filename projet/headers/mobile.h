@@ -55,5 +55,4 @@ void mobileMove(void);
 void mobileDraw(GLuint obj);
 void springInit(int n);
 void applyBoidsRules(int i);
-
 #endif

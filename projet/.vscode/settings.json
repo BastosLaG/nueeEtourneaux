@@ -61,6 +61,7 @@
     "mobile.h": "c",
     "*.tcc": "c",
     "predateur.h": "c",
-    "assimp.h": "c"
+    "assimp.h": "c",
+    "sdl_ttf.h": "c"
   }
 }
