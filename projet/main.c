@@ -332,12 +332,22 @@ static void initAudio(const char * filename) {
     Mix_PlayMusic(_mmusic, -1);
 }
 
+// Calculer la différence de temps entre les cadres
+static double get_dt(void) {
+  static double t0 = 0, t, dt;
+  t = gl4dGetElapsedTime();
+  dt = (t - t0) / 1000.0;
+  t0 = t;
+  return dt;
+}
+
 // La scène est soit dessinée du point de vue de la lumière (sm = GL_TRUE donc shadow map) soit dessinée du point de vue de la caméra
 static inline void scene(GLboolean sm) {
   glEnable(GL_CULL_FACE);
 
   // Calculer le centroid
   GLfloat cx, cy, cz;
+  GLfloat a, b, c;
   calculateCentroid(&cx, &cy, &cz);
 
   if (sm) {
@@ -376,7 +386,7 @@ static inline void scene(GLboolean sm) {
     gl4duBindMatrix("modelMatrix");
     gl4duLoadIdentityf();
     gl4duPushMatrix(); {
-      gl4duTranslatef(_lumpos[0], _lumpos[1], _lumpos[2]);
+      gl4duTranslatef(_lumpos[0] * cos(a), _lumpos[1] * cos(a), _lumpos[2] * cos(a));
       gl4duScalef(0.3f, 0.3f, 0.3f);
       gl4duSendMatrices();
     } gl4duPopMatrix();
@@ -398,6 +408,8 @@ static inline void scene(GLboolean sm) {
   if (_predator_visible) {
     predatorDraw(_rapace);
   }
+
+  a += get_dt();
 }
 
 // Dessine la vue du prédateur
