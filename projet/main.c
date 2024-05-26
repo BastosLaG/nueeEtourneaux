@@ -67,13 +67,12 @@ static GLfloat * _pixels = NULL;
 // Position de la lumière, relative aux objets
 static GLfloat _lumpos[] = { 9, 3, 0, 1 };
 
-
-
 // Variable de contrôle pour l'affichage du prédateur
 static GLboolean _predator_visible  = GL_FALSE;
 static GLboolean _predator_view = GL_FALSE;
 GLboolean _color_bird = GL_FALSE;
 
+//Gestion de la musique
 static Mix_Music * _mmusic = NULL;
 static char _filename[128] = "audio/son.mid";
 static GLfloat _hauteurs[ECHANTILLONS];
@@ -448,7 +447,7 @@ static void draw(void) {
   glClear(GL_COLOR_BUFFER_BIT);
   // Un seul rendu GL_COLOR_ATTACHMENT0 + effacement couleur et depth
   glDrawBuffers(1, renderings);
-  glClearColor(1.0f, 0.7f, 0.7f, 0.0f);
+  glClearColor(0.0f, 0.0f, 1.0f, 1.0f); 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   // Deux rendus GL_COLOR_ATTACHMENT0 et GL_COLOR_ATTACHMENT1
   glDrawBuffers(2, renderings);
@@ -477,6 +476,7 @@ static void draw(void) {
     glDisable(GL_TEXTURE_2D);
   }
 }
+
 
 // Libère les éléments utilisés au moment de sortir du programme (atexit)
 static void quit(void) {
