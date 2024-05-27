@@ -35,9 +35,6 @@ static GLuint _sphere = 0, _quad = 0;
 
 static GLboolean _view_centroid = GL_FALSE;
 
-static GLfloat _width = 8.0f;
-static GLfloat _depth = 8.0f;
-
 GLfloat _plan_s = 8.0f;
 
 static GLuint _fbo = 0;
