@@ -4,8 +4,8 @@
 #include <GL4D/gl4du.h>
 #include <GL4D/gl4dg.h>
 
-#define VELOCITY_LIMIT_PREDATOR 10.0f // Limite de la vitesse
-#define TARGET_WEIGHT_PREDATOR .8f // Limite de la vitesse
+#define VELOCITY_LIMIT_PREDATOR 10.0f 
+#define TARGET_WEIGHT_PREDATOR .8f 
 
 typedef struct {
   GLfloat x, y, z, r;

@@ -11,19 +11,19 @@ extern GLfloat _plan_s;
 
 #define HAUTEUR_SEUIL 7.0f
 #define EPSILON 0.00001f
-#define K_RESSORT 1.5f // Constante de raideur du ressort
-#define MAX_FORCE 0.1f // Force maximale pour limiter l'accélération
-#define NUM_NEIGHBORS 6 // Nombre de voisins les plus proches
-#define DAMPING 0.99f // Facteur d'amortissement pour stabiliser le mouvement
-#define ALIGNMENT_WEIGHT 0.5f // Poids pour l'alignement
-#define COHESION_WEIGHT 1.0f // Poids pour la cohésion
-#define SEPARATION_WEIGHT 1.0f // Poids pour la séparation
-#define AVOIDANCE_WEIGHT 1.5f // Poids pour éviter les murs
-#define TARGET_WEIGHT 0.05f // Poids pour la direction cible
-#define VELOCITY_LIMIT 5.0f // Limite de la vitesse
-#define TARGET_VELOCITY 2.0f // Vitesse cible
+#define K_RESSORT 1.5f
+#define MAX_FORCE 0.1f
+#define NUM_NEIGHBORS 6
+#define DAMPING 0.99f
+#define ALIGNMENT_WEIGHT 0.5f
+#define COHESION_WEIGHT 1.0f 
+#define SEPARATION_WEIGHT 1.0f
+#define AVOIDANCE_WEIGHT 1.5f
+#define TARGET_WEIGHT 0.05f
+#define VELOCITY_LIMIT 5.0f
+#define TARGET_VELOCITY 2.0f
 #define REPULSION_MULTIPLIER 2.0f
-#define PREDATOR_AVOIDANCE_WEIGHT 2.0f // Poids pour éviter le prédateur
+#define PREDATOR_AVOIDANCE_WEIGHT 2.0f
 
 typedef struct mobile_t {
   GLuint id;
@@ -37,11 +37,9 @@ typedef struct mobile_t {
 } mobile_t;
 
 extern GLboolean _color_bird;
-
 typedef struct spring_t {
-  int a, b; // Indices des deux mobiles reliés par le ressort
-  GLfloat rest_length; // Longueur au repos du ressort
-} spring_t;
+  int a, b;  
+  GLfloat rest_length;} spring_t;
 
 extern mobile_t * _mobile;
 extern spring_t * _springs;
