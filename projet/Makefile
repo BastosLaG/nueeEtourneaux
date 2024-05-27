@@ -52,10 +52,12 @@ dist: distdir
 	$(CHMOD) -R a+r $(distdir)
 	$(TAR) zcvf $(distdir).tgz $(distdir)
 	$(RM) -r $(distdir)
+# $(MAKE) msvc # Comment out this line if not needed
 zip: distdir
 	$(CHMOD) -R a+r $(distdir)
 	$(ZIP) -r $(distdir).zip $(distdir)
 	$(RM) -r $(distdir)
+# $(MAKE) msvc # Comment out this line if not needed
 distdir: $(DISTFILES)
 	$(RM) -r $(distdir)
 	$(MKDIR) $(distdir)
