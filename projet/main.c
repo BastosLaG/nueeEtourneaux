@@ -54,7 +54,7 @@ static GLuint _predatorFBO = 0;
 static GLuint _predatorTex = 0;
 
 // Nombre de mobiles créés dans la scène
-static GLuint _nb_mobiles = 500;
+static GLuint _nb_mobiles = 2000;
 
 // Copie CPU de la mémoire texture d'identifiants
 static GLfloat * _pixels = NULL;
