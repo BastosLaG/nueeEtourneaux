@@ -1,8 +1,3 @@
-#  Makefile 
-#  Auteur : Farès BELHADJ
-#  Email  : amsi@up8.edu
-#  Date   : 28/04/2020
-# définition des commandes utilisées
 CC = gcc
 ECHO = echo
 RM = rm -f
@@ -11,11 +6,9 @@ ZIP = zip
 MKDIR = mkdir
 CHMOD = chmod
 CP = rsync -R
-# déclaration des options du compilateur
 CFLAGS = -Wall -O3
 CPPFLAGS = -I.
 LDFLAGS = -lm -lassimp -lSDL2_image
-# définition des fichiers et dossiers
 PACKNAME = API8_2024
 PROGNAME = demo
 VERSION = 1.0
@@ -28,7 +21,6 @@ DOXYFILE = documentation/Doxyfile
 VSCFILES = $(PROGNAME).vcxproj $(PROGNAME).sln
 EXTRAFILES = COPYING $(wildcard shaders/*.?s models/* audio/* ) $(VSCFILES)
 DISTFILES = $(SOURCES) Makefile $(HEADERS) $(DOXYFILE) $(EXTRAFILES)
-# Traitements automatiques pour ajout de chemins et options (ne pas modifier)
 ifneq (,$(shell ls -d /usr/local/include 2>/dev/null | tail -n 1))
 	CPPFLAGS += -I/usr/local/include
 endif

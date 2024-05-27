@@ -10,8 +10,7 @@
 
 #include <SDL2/SDL_ttf.h>
 
-//test
-// Déclaration des fonctions
+
 static void init(void);
 static void draw(void);
 static void quit(void);
@@ -24,27 +23,23 @@ static void mixCallback(void *udata, Uint8 *stream, int len);
 #define SHADOW_MAP_SIDE 512
 #define ECHANTILLONS 1024
 
-// Dimensions de la fenêtre
 static int _wW = 1280, _wH = 720;
 
-// Identifiants des programmes GLSL
 static GLuint _shPID = 0;
 static GLuint _smPID = 0;
 
-// Identifiant de notre étourneau
 static GLuint _moineau = 0;
 static GLuint _rapace = 0;
 
-// Quelques objets géométriques
 static GLuint _sphere = 0, _quad = 0;
 
 static GLboolean _view_centroid = GL_FALSE;
 
+static GLfloat _width = 8.0f;
+static GLfloat _depth = 8.0f;
 
-// Scale du plan
 GLfloat _plan_s = 8.0f;
 
-// Framebuffer Object et textures associées
 static GLuint _fbo = 0;
 static GLuint _colorTex = 0;
 static GLuint _depthTex = 0;
@@ -53,28 +48,22 @@ static GLuint _smTex = 0;
 static GLuint _predatorFBO = 0;
 static GLuint _predatorTex = 0;
 
-// Nombre de mobiles créés dans la scène
 static GLuint _nb_mobiles = 2000;
 
-// Copie CPU de la mémoire texture d'identifiants
 static GLfloat * _pixels = NULL;
 
-// Position de la lumière, relative aux objets
-static GLfloat _lumpos[] = { 9, 3, 0, 1 };
+static GLfloat _lumpos[] = { 13, 7, 0, 1 };
 
-// Variable de contrôle pour l'affichage du prédateur
 static GLboolean _predator_visible  = GL_FALSE;
 static GLboolean _predator_view = GL_FALSE;
 GLboolean _color_bird = GL_FALSE;
 
-//Gestion de la musique
 static Mix_Music * _mmusic = NULL;
 static char _filename[128] = "audio/son.mid";
 static GLfloat _hauteurs[ECHANTILLONS];
 
-// Fonction principale pour créer la fenêtre, initialiser GL et lancer la boucle principale d'affichage
 int main(int argc, char ** argv) {
-  if(!gl4duwCreateWindow(argc, argv, "GL4D - Les oiseaux qui volent en groupe", 0, 0, _wW, _wH, GL4DW_SHOWN))
+  if(!gl4duwCreateWindow(argc, argv, "GL4D - Nuée d'étourneaux ", 0, 0, _wW, _wH, GL4DW_SHOWN))
     return 1;
   init();
   atexit(quit);
@@ -86,7 +75,6 @@ int main(int argc, char ** argv) {
   return 0;
 }
 
-// Initialise les paramètres OpenGL
 static void init(void) {
 
   initAudio(_filename);
@@ -117,46 +105,40 @@ static void init(void) {
   _sphere = gl4dgGenSpheref(30, 30);
   _quad = gl4dgGenQuadf();
   mobileInit(_nb_mobiles, _plan_s, _plan_s);
+  predatorFree();
 
-  // Création et paramétrage de la Texture de shadow map
   glGenTextures(1, &_smTex);
   glBindTexture(GL_TEXTURE_2D, _smTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_MAP_SIDE, SHADOW_MAP_SIDE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 
-  // Création et paramétrage de la Texture recevant la couleur
   glGenTextures(1, &_colorTex);
   glBindTexture(GL_TEXTURE_2D, _colorTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-  // Création et paramétrage de la Texture recevant la profondeur
   glGenTextures(1, &_depthTex);
   glBindTexture(GL_TEXTURE_2D, _depthTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _wW, _wH, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 
-  // Création et paramétrage de la Texture recevant les identifiants d'objets
   glGenTextures(1, &_idTex);
   glBindTexture(GL_TEXTURE_2D, _idTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _wW, _wH, 0, GL_RED, GL_UNSIGNED_INT, NULL);
 
-  // Création du Framebuffer Object
   glGenFramebuffers(1, &_fbo);
 
-  // Création et paramétrage de la Texture pour la vue du prédateur
   glGenTextures(1, &_predatorTex);
   glBindTexture(GL_TEXTURE_2D, _predatorTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW / 4, _wH / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-  // Création du Framebuffer Object pour la vue du prédateur
   glGenFramebuffers(1, &_predatorFBO);
   glBindFramebuffer(GL_FRAMEBUFFER, _predatorFBO);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _predatorTex, 0);
@@ -166,18 +148,15 @@ static void init(void) {
   assert(_pixels);
 }
 
-// Fonction de redimensionnement
 static void resize(int width, int height) {
   _wW = width;
   _wH = height;
   glViewport(0, 0, _wW, _wH);
 
-  // Mettre à jour les matrices de projection
   gl4duBindMatrix("cameraProjectionMatrix");
   gl4duLoadIdentityf();
   gl4duFrustumf(-0.5, 0.5, -0.5 * _wH / _wW, 0.5 * _wH / _wW, 1.0, 50.0);
 
-  // Redimensionner les textures
   glBindTexture(GL_TEXTURE_2D, _colorTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -187,7 +166,6 @@ static void resize(int width, int height) {
   glBindTexture(GL_TEXTURE_2D, _idTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, _wW, _wH, 0, GL_RED, GL_UNSIGNED_INT, NULL);
 
-  // Redimensionner la texture de la vue du prédateur
   glBindTexture(GL_TEXTURE_2D, _predatorTex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW / 4, _wH / 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -196,7 +174,6 @@ static void resize(int width, int height) {
   assert(_pixels);
 }
 
-// Gestion des événements clavier
 static void keydown(int keycode) {
   if (keycode == SDLK_p) {
     if (_predator_visible) {
@@ -221,20 +198,30 @@ static void keydown(int keycode) {
   }
 }
 
-// Calcule le centroid de tous les oiseaux
 static void calculateCentroid(GLfloat *cx, GLfloat *cy, GLfloat *cz) {
   GLfloat sumX = 0, sumY = 0, sumZ = 0;
+  int count = 0; // Compteur pour éviter la division par zéro
+
   for (int i = 0; i < _nb_mobiles; i++) {
+    if (!isfinite(_mobile[i].x) || !isfinite(_mobile[i].y) || !isfinite(_mobile[i].z)) continue;
     sumX += _mobile[i].x;
     sumY += _mobile[i].y;
     sumZ += _mobile[i].z;
+    count++;
   }
-  *cx = sumX / _nb_mobiles;
-  *cy = sumY / _nb_mobiles;
-  *cz = sumZ / _nb_mobiles;
+
+  if (count > 0) {
+    *cx = sumX / count;
+    *cy = sumY / count;
+    *cz = sumZ / count;
+  } else {
+    *cx = 0;
+    *cy = 0;
+    *cz = 0;
+  }
+
 }
 
-// Musique
 static void mixCallback(void *udata, Uint8 *stream, int len) {
   int i;
   Sint16 *s = (Sint16 *)stream;
@@ -249,7 +236,6 @@ static void initAudio(const char * filename) {
   if( (res & mixFlags) != mixFlags ) {
     fprintf(stderr, "Mix_Init: Erreur lors de l'initialisation de la bibliotheque SDL_Mixer\n");
     fprintf(stderr, "Mix_Init: %s\n", Mix_GetError());
-    //exit(3); commenté car ne réagit correctement sur toutes les architectures
   }
   if(Mix_OpenAudio(44100, AUDIO_S16LSB, 2, 1024) < 0)
     exit(4);
@@ -262,20 +248,9 @@ static void initAudio(const char * filename) {
     Mix_PlayMusic(_mmusic, -1);
 }
 
-// // Calculer la différence de temps entre les cadres
-// static double get_dt(void) {
-//   static double t0 = 0, t, dt;
-//   t = gl4dGetElapsedTime();
-//   dt = (t - t0) / 1000.0;
-//   t0 = t;
-//   return dt;
-// }
-
-// La scène est soit dessinée du point de vue de la lumière (sm = GL_TRUE donc shadow map) soit dessinée du point de vue de la caméra
 static inline void scene(GLboolean sm) {
   glEnable(GL_CULL_FACE);
 
-  // Calculer le centroid
   GLfloat cx, cy, cz;
   calculateCentroid(&cx, &cy, &cz);
 
@@ -328,7 +303,7 @@ static inline void scene(GLboolean sm) {
 
   gl4duPushMatrix(); {
     gl4duRotatef(-90, 1, 0, 0);
-    gl4duScalef(_plan_s, _plan_s, _plan_s);
+    gl4duScalef(_plan_s*2, _plan_s, _plan_s);
     gl4duSendMatrices();
   } gl4duPopMatrix();
   gl4dgDraw(_quad);
@@ -339,7 +314,6 @@ static inline void scene(GLboolean sm) {
   }
 }
 
-// Dessine la vue du prédateur
 static void drawPredatorView(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, _predatorFBO);
   glViewport(0, 0, _wW / 4, _wH / 4);
@@ -347,24 +321,19 @@ static void drawPredatorView(void) {
 
   gl4duBindMatrix("cameraViewMatrix");
   gl4duLoadIdentityf();
-  GLfloat cx, cy, cz;
-  calculateCentroid(&cx, &cy, &cz);
-  gl4duLookAtf(_predator.x, _predator.y, _predator.z, cx, cy, cz, 0, 1, 0);
+  gl4duLookAtf(_predator.x, _predator.y, _predator.z, _predator.targetX, _predator.targetY, _predator.targetZ, 0, 1, 0);
 
   scene(GL_FALSE);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// Dessine dans le contexte OpenGL actif
 static void draw(void) {
   GLenum renderings[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
   glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-  // Désactiver le rendu de couleur et ne laisser que le depth, dans _smTex
   glDrawBuffer(GL_NONE);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _smTex, 0);
-  // Viewport de la shadow map et dessin de la scène du point de vue de la lumière
   glViewport(0, 0, SHADOW_MAP_SIDE, SHADOW_MAP_SIDE);
   glClear(GL_DEPTH_BUFFER_BIT);
   scene(GL_TRUE);
@@ -375,30 +344,24 @@ static void draw(void) {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _wW, _wH, 0, GL_RED, GL_FLOAT, _pixels);
   gl4dfConvTex2Frame(_colorTex);
 
-  // Paramétrer le fbo pour 2 rendus couleurs + un (autre) depth
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, _idTex, 0);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTex, 0);
   glViewport(0, 0, _wW, _wH);
-  // Un seul rendu GL_COLOR_ATTACHMENT1 + effacement 0
   glDrawBuffers(1, &renderings[1]);
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT);
-  // Un seul rendu GL_COLOR_ATTACHMENT0 + effacement couleur et depth
   glDrawBuffers(1, renderings);
-  glClearColor(0.0f, 0.0f, 1.0f, 1.0f); 
+  glClearColor(0.0f, 1.0f, 1.0f, 1.0f); 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  // Deux rendus GL_COLOR_ATTACHMENT0 et GL_COLOR_ATTACHMENT1
   glDrawBuffers(2, renderings);
 
   scene(GL_FALSE);
 
-  // Copie du fbo à l'écran
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
   glBlitFramebuffer(0, 0, _wW, _wH, 0, 0, _wW, _wH, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-  // Dessiner la vue du prédateur
   if (_predator_visible) {
     drawPredatorView();
 
@@ -416,8 +379,6 @@ static void draw(void) {
   }
 }
 
-
-// Libère les éléments utilisés au moment de sortir du programme (atexit)
 static void quit(void) {
   if(_fbo) {
     glDeleteTextures(1, &_colorTex);
