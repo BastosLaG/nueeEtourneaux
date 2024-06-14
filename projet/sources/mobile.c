@@ -29,8 +29,7 @@ static void normalize(GLfloat *v);
 static GLfloat dotProduct(GLfloat *a, GLfloat *b);
 static void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result);
 static void orientMobile(int i);
-int compareDistances(const void *a, const void *b);
-void springInit(int n);
+
 
 
 void mobileInit(int n, GLfloat width, GLfloat depth) {
@@ -55,10 +54,10 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
     _mobile[i].vx = 3.0f * (gl4dmSURand() - 0.5f);
     _mobile[i].vy = 3.0f * (gl4dmURand() - 0.5f);
     _mobile[i].vz = 3.0f * (gl4dmSURand() - 0.5f);
-    _mobile[i].color[0] = gl4dmURand(); // Rouge
-    _mobile[i].color[1] = gl4dmURand(); // Vert
-    _mobile[i].color[2] = gl4dmURand(); // Bleu
-    _mobile[i].color[3] = 1.0f; // Alpha
+    _mobile[i].color[0] = gl4dmURand();
+    _mobile[i].color[1] = gl4dmURand();
+    _mobile[i].color[2] = gl4dmURand();
+    _mobile[i].color[3] = 1.0f;
     _mobile[i].freeze = GL_FALSE;
     _mobile[i].y_direction_inversee = GL_FALSE;
     updateTargetDirection(i);
@@ -67,12 +66,6 @@ void mobileInit(int n, GLfloat width, GLfloat depth) {
   predatorInit(_nb_mobiles, _width, HAUTEUR_SEUIL, _depth);
 }
 
-struct Distance {
-  float dist;
-  int index;
-};
-
-// Comparison function for qsort
 int compareDistances(const void *a, const void *b) {
   struct Distance *distA = (struct Distance *)a;
   struct Distance *distB = (struct Distance *)b;
@@ -83,7 +76,7 @@ int compareDistances(const void *a, const void *b) {
 
 void springInit(int n) {
   int i, j, k, l;
-  _nb_springs = n * 6; // Each mobile will have 6 springs
+  _nb_springs = n * 6;
   if(_springs) {
     free(_springs);
     _springs = NULL;
@@ -96,7 +89,6 @@ void springInit(int n) {
 
   k = 0;
   for(i = 0; i < _nb_mobiles; i++) {
-    // Calculate distances from mobile i to all other mobiles
     for(j = 0; j < _nb_mobiles; j++) {
       if (i != j) {
         float dx = _mobile[i].x - _mobile[j].x;
@@ -105,14 +97,12 @@ void springInit(int n) {
         distances[j].dist = sqrtf(dx * dx + dy * dy + dz * dz);
         distances[j].index = j;
       } else {
-        distances[j].dist = FLT_MAX; // Set the distance to itself to max to avoid self-connection
+        distances[j].dist = FLT_MAX;
       }
     }
 
-    // Sort distances to find the closest 6
     qsort(distances, _nb_mobiles, sizeof(struct Distance), compareDistances);
 
-    // Create springs to the six closest mobiles
     for(l = 0; l < 6; l++) {
       _springs[k].a = i;
       _springs[k].b = distances[l].index;
@@ -338,8 +328,6 @@ void applyBoidsRules(int i) {
     _mobile[i].vz += separationZ * (SEPARATION_WEIGHT * 2);
   }
 }
-
-
 
 static void avoidPredator(int i) {
   GLfloat dx = _predator.x - _mobile[i].x;

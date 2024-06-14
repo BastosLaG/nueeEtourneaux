@@ -197,7 +197,7 @@ static void keydown(int keycode) {
 
 static void calculateCentroid(GLfloat *cx, GLfloat *cy, GLfloat *cz) {
   GLfloat sumX = 0, sumY = 0, sumZ = 0;
-  int count = 0; // Compteur pour éviter la division par zéro
+  int count = 0;
 
   for (int i = 0; i < _nb_mobiles; i++) {
     if (!isfinite(_mobile[i].x) || !isfinite(_mobile[i].y) || !isfinite(_mobile[i].z)) continue;

@@ -36,6 +36,11 @@ typedef struct mobile_t {
   GLfloat targetX, targetY, targetZ;
 } mobile_t;
 
+struct Distance {
+  float dist;
+  int index;
+};
+
 extern GLboolean _color_bird;
 typedef struct spring_t {
   int a, b;  
@@ -53,4 +58,5 @@ void mobileMove(void);
 void mobileDraw(GLuint obj);
 void springInit(int n);
 void applyBoidsRules(int i);
+int compareDistances(const void *a, const void *b);
 #endif
