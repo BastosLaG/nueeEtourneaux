@@ -41,6 +41,18 @@ struct Distance {
   int index;
 };
 
+#define MAX_DEPTH 10
+#define MAX_OBJECTS 10
+
+typedef struct OctreeNode_t {
+  GLfloat x, y, z;
+  GLfloat size;
+  struct OctreeNode_t *children[8];
+  int *mobiles;
+  int num_mobiles;
+  int is_leaf;
+} OctreeNode_t;
+
 extern GLboolean _color_bird;
 typedef struct spring_t {
   int a, b;  
@@ -48,15 +60,23 @@ typedef struct spring_t {
 
 extern mobile_t * _mobile;
 extern spring_t * _springs;
+extern OctreeNode_t * _root;
+
 extern GLboolean useBoids;
 
-void mobileInit(int n, GLfloat width, GLfloat depth);
-void mobileSetFreeze(GLuint id, GLboolean freeze);
-void mobileGetCoords(GLuint id, GLfloat * coords);
-void mobileSetCoords(GLuint id, GLfloat * coords);
+void mobileInit(int, GLfloat, GLfloat);
+void mobileSetFreeze(GLuint, GLboolean);
+void mobileGetCoords(GLuint, GLfloat *);
+void mobileSetCoords(GLuint, GLfloat *);
 void mobileMove(void);
-void mobileDraw(GLuint obj);
-void springInit(int n);
-void applyBoidsRules(int i);
-int compareDistances(const void *a, const void *b);
+void mobileDraw(GLuint);
+void springInit(int);
+void applyBoidsRules(int);
+int compareDistances(const void *, const void *);
+
+OctreeNode_t* createOctreeNode(GLfloat, GLfloat, GLfloat, GLfloat);
+void insertMobile(OctreeNode_t *, int, int);
+void freeOctreeNode(OctreeNode_t *);
+void findClosestNeighbors(int, int*);
+
 #endif

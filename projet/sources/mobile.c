@@ -12,6 +12,8 @@
 
 mobile_t * _mobile = NULL;
 spring_t * _springs = NULL;
+OctreeNode_t * _root = NULL;
+
 static int _nb_mobiles = 0;
 static int _nb_springs = 0;
 static GLfloat _width = 1, _depth = 1;
@@ -29,8 +31,6 @@ static void normalize(GLfloat *v);
 static GLfloat dotProduct(GLfloat *a, GLfloat *b);
 static void crossProduct(GLfloat *a, GLfloat *b, GLfloat *result);
 static void orientMobile(int i);
-
-
 
 void mobileInit(int n, GLfloat width, GLfloat depth) {
   int i;
@@ -75,43 +75,153 @@ int compareDistances(const void *a, const void *b) {
 }
 
 void springInit(int n) {
-  int i, j, k, l;
-  _nb_springs = n * 6;
-  if(_springs) {
+  int i, j, k;
+  _nb_springs = n * 6; // Each mobile will have 6 springs
+  if (_springs) {
     free(_springs);
     _springs = NULL;
   }
   _springs = malloc(_nb_springs * sizeof * _springs);
   assert(_springs);
 
-  struct Distance *distances = malloc(_nb_mobiles * sizeof(struct Distance));
-  assert(distances);
+  // Initialize the octree _root node
+  _root = createOctreeNode(_width/2, _depth/2, _depth/2, fmaxf(_width, _depth));
+
+  // Insert mobiles into the octree
+  for (i = 0; i < _nb_mobiles; i++) {
+    insertMobile(_root, i, 0);
+  }
 
   k = 0;
-  for(i = 0; i < _nb_mobiles; i++) {
-    for(j = 0; j < _nb_mobiles; j++) {
-      if (i != j) {
-        float dx = _mobile[i].x - _mobile[j].x;
-        float dy = _mobile[i].y - _mobile[j].y;
-        float dz = _mobile[i].z - _mobile[j].z;
-        distances[j].dist = sqrtf(dx * dx + dy * dy + dz * dz);
-        distances[j].index = j;
-      } else {
-        distances[j].dist = FLT_MAX;
+  for (i = 0; i < _nb_mobiles; i++) {
+    int closest_neighbors[6];
+    findClosestNeighbors(i, closest_neighbors);
+
+    for (j = 0; j < 6; j++) {
+      if (closest_neighbors[j] != -1) {
+        _springs[k].a = i;
+        _springs[k].b = closest_neighbors[j];
+        _springs[k].rest_length = 3.0f;
+        k++;
       }
     }
+  }
 
-    qsort(distances, _nb_mobiles, sizeof(struct Distance), compareDistances);
+  freeOctreeNode(_root);
+}
 
-    for(l = 0; l < 6; l++) {
-      _springs[k].a = i;
-      _springs[k].b = distances[l].index;
-      _springs[k].rest_length = 3.0f;
-      k++;
+
+
+OctreeNode_t* createOctreeNode(GLfloat x, GLfloat y, GLfloat z, GLfloat size) {
+  OctreeNode_t *node = (OctreeNode_t*)malloc(sizeof(OctreeNode_t));
+  node->x = x;
+  node->y = y;
+  node->z = z;
+  node->size = size;
+  node->is_leaf = 1;
+  node->mobiles = (int*)malloc(MAX_OBJECTS * sizeof(int));
+  node->num_mobiles = 0;
+  for (int i = 0; i < 8; i++) {
+    node->children[i] = NULL;
+  }
+  return node;
+}
+
+void insertMobile(OctreeNode_t *node, int mobile_index, int depth) {
+  if (node->is_leaf) {
+    if (node->num_mobiles < MAX_OBJECTS || depth == MAX_DEPTH) {
+      node->mobiles[node->num_mobiles++] = mobile_index;
+    } else {
+      // Subdivide the node
+      node->is_leaf = 0;
+      for (int i = 0; i < 8; i++) {
+        GLfloat newSize = node->size / 2;
+        node->children[i] = createOctreeNode(
+          node->x + (i & 1 ? newSize / 2 : -newSize / 2),
+          node->y + (i & 2 ? newSize / 2 : -newSize / 2),
+          node->z + (i & 4 ? newSize / 2 : -newSize / 2),
+          newSize
+        );
+      }
+
+      // Re-insert mobiles into children
+      for (int i = 0; i < node->num_mobiles; i++) {
+        int idx = node->mobiles[i];
+        insertMobile(node, idx, depth + 1);
+      }
+      node->num_mobiles = 0;
+      insertMobile(node, mobile_index, depth + 1);
+    }
+  } else {
+    // Insert into appropriate child
+    for (int i = 0; i < 8; i++) {
+      GLfloat halfSize = node->size / 2;
+      if (fabsf(_mobile[mobile_index].x - node->children[i]->x) <= halfSize &&
+          fabsf(_mobile[mobile_index].y - node->children[i]->y) <= halfSize &&
+          fabsf(_mobile[mobile_index].z - node->children[i]->z) <= halfSize) {
+        insertMobile(node->children[i], mobile_index, depth + 1);
+        break;
+      }
     }
   }
-  free(distances);
 }
+
+void freeOctreeNode(OctreeNode_t *node) {
+  if (!node->is_leaf) {
+    for (int i = 0; i < 8; i++) {
+      freeOctreeNode(node->children[i]);
+    }
+  }
+  free(node->mobiles);
+  free(node);
+}
+
+void findClosestNeighbors(int mobile_index, int * closest_neighbors) {
+  GLfloat minDist[6];
+  for (int i = 0; i < 6; i++) {
+    minDist[i] = FLT_MAX;
+    closest_neighbors[i] = -1;
+  }
+  void searchOctree(OctreeNode_t *node) {
+    if (node == NULL) return;
+
+    GLfloat halfSize = node->size / 2;
+    if (fabsf(_mobile[mobile_index].x - node->x) > halfSize ||
+        fabsf(_mobile[mobile_index].y - node->y) > halfSize ||
+        fabsf(_mobile[mobile_index].z - node->z) > halfSize) {
+      return;
+    }
+
+    if (node->is_leaf) {
+      for (int i = 0; i < node->num_mobiles; i++) {
+        int idx = node->mobiles[i];
+        if (idx == mobile_index) continue;
+        GLfloat dx = _mobile[mobile_index].x - _mobile[idx].x;
+        GLfloat dy = _mobile[mobile_index].y - _mobile[idx].y;
+        GLfloat dz = _mobile[mobile_index].z - _mobile[idx].z;
+        GLfloat dist = sqrtf(dx * dx + dy * dy + dz * dz);
+
+        for (int j = 0; j < 6; j++) {
+          if (dist < minDist[j]) {
+            for (int k = 5; k > j; k--) {
+              minDist[k] = minDist[k - 1];
+              closest_neighbors[k] = closest_neighbors[k - 1];
+            }
+            minDist[j] = dist;
+            closest_neighbors[j] = idx;
+            break;
+          }
+        }
+      }
+    } else {
+      for (int i = 0; i < 8; i++) {
+        searchOctree(node->children[i]);
+      }
+    }
+  }
+  searchOctree(_root);
+}
+
 
 void mobileSetFreeze(GLuint id, GLboolean freeze) {
   _mobile[id].freeze = freeze;
@@ -158,31 +268,62 @@ void mobileMove(void) {
 }
 
 static void applySpringForces(void) {
+  GLfloat centerX = _width / 2.0f;
+  GLfloat centerY = _depth / 2.0f;
+  GLfloat centerZ = _depth / 2.0f;
+
   for (int i = 0; i < _nb_springs; i++) {
-    int a = _springs[i].a;
-    int b = _springs[i].b;
+    GLuint a = _springs[i].a;
+    GLuint b = _springs[i].b;
+
+    if (a < 0 || a >= _nb_mobiles || b < 0 || b >= _nb_mobiles) {
+        continue;
+    }
+
     GLfloat dx = _mobile[b].x - _mobile[a].x;
     GLfloat dy = _mobile[b].y - _mobile[a].y;
     GLfloat dz = _mobile[b].z - _mobile[a].z;
     GLfloat distance = sqrtf(dx * dx + dy * dy + dz * dz);
-    GLfloat force = K_RESSORT * (distance - _springs[i].rest_length);
 
-    if (force > MAX_FORCE) force = MAX_FORCE;
-    if (force < -MAX_FORCE) force = -MAX_FORCE;
+    GLfloat distA = sqrtf(
+        powf(_mobile[a].x - centerX, 2) + 
+        powf(_mobile[a].y - centerY, 2) + 
+        powf(_mobile[a].z - centerZ, 2)
+    );
+    GLfloat distB = sqrtf(
+        powf(_mobile[b].x - centerX, 2) + 
+        powf(_mobile[b].y - centerY, 2) + 
+        powf(_mobile[b].z - centerZ, 2)
+    );
+    GLfloat factorA = 1.0f + (distA / 5.0f);
+    GLfloat factorB = 1.0f + (distB / 5.0f);
 
-    GLfloat fx = (dx / distance) * force;
-    GLfloat fy = (dy / distance) * force;
-    GLfloat fz = (dz / distance) * force;
+    GLfloat forceA = K_RESSORT * factorA * (distance - _springs[i].rest_length);
+    GLfloat forceB = K_RESSORT * factorB * (distance - _springs[i].rest_length);
 
-    _mobile[a].vx += fx;
-    _mobile[a].vy += fy;
-    _mobile[a].vz += fz;
+    if (forceA > MAX_FORCE) forceA = MAX_FORCE;
+    if (forceA < -MAX_FORCE) forceA = -MAX_FORCE;
+    if (forceB > MAX_FORCE) forceB = MAX_FORCE;
+    if (forceB < -MAX_FORCE) forceB = -MAX_FORCE;
 
-    _mobile[b].vx -= fx;
-    _mobile[b].vy -= fy;
-    _mobile[b].vz -= fz;
+    GLfloat fxA = (dx / distance) * forceA;
+    GLfloat fyA = (dy / distance) * forceA;
+    GLfloat fzA = (dz / distance) * forceA;
+    GLfloat fxB = (dx / distance) * forceB;
+    GLfloat fyB = (dy / distance) * forceB;
+    GLfloat fzB = (dz / distance) * forceB;
+
+    // Appliquez la force aux mobiles a et b
+    _mobile[a].vx += fxA;
+    _mobile[a].vy += fyA;
+    _mobile[a].vz += fzA;
+    _mobile[b].vx -= fxB;
+    _mobile[b].vy -= fyB;
+    _mobile[b].vz -= fzB;
   }
+  // printf("test\n"); 
 }
+
 
 
 static void normalize(GLfloat *v) {
