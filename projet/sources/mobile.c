@@ -104,7 +104,6 @@ void springInit(int n) {
       }
     }
   }
-
   freeOctreeNode(_root);
 }
 
