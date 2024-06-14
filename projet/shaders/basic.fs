@@ -20,14 +20,14 @@ void main() {
         vec3 L = normalize(vsoMVPos.xyz - lumpos.xyz);
         vec3 projCoords = vsoSMCoord.xyz / vsoSMCoord.w;
         float diffuse = dot(N, -L);
-        if(texture(smTex, projCoords.xy).r  <  projCoords.z) diffuse *= 0.0; 
-        fragColor = vec4((couleur.rgb * diffuse), couleur.a);
+        if(texture(smTex, projCoords.xy).r  <  projCoords.z) diffuse *= .6; 
+        fragColor = vec4((couleur.rgb * diffuse), 0.1);
     } 
     // Phong
     else {
         vec3 ambient = couleur.rgb;
         vec3 diffuseColor = couleur.rgb;
-        vec3 specularColor = vec3(1.0, 1.0, 1.0);
+        vec3 specularColor = vec3(0.5, 0.1, 0.9);
         float shininess = 32.0;
 
         vec3 N = normalize(vsoNormal.xyz);

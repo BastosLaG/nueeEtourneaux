@@ -33,7 +33,7 @@ static GLuint _rapace = 0;
 
 static GLuint _sphere = 0, _quad = 0;
 
-static GLboolean _view_centroid = GL_FALSE;
+static GLboolean _view_centroid = GL_TRUE;
 
 GLfloat _plan_s = 8.0f;
 
@@ -45,7 +45,7 @@ static GLuint _smTex = 0;
 static GLuint _predatorFBO = 0;
 static GLuint _predatorTex = 0;
 
-static GLuint _nb_mobiles = 2000;
+static GLuint _nb_mobiles = 1000;
 
 static GLfloat * _pixels = NULL;
 

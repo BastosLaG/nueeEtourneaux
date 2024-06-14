@@ -27,11 +27,14 @@ Ce projet démontre le rendu d'objets mobiles dans une scène 3D en utilisant Op
 
 2. **Installer les dépendances** :
     Assurez-vous d'avoir OpenGL et la bibliothèque GL4D installés sur votre système. Vous devrez peut-être installer Assimp pour le chargement des modèles.
+    ```sh
+    sudo apt update
+    sudo apt install gcc make libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev libassimp-dev libgl1-mesa-dev libglu1-mesa-dev doxygen upx
+    ```
 3. **Construire le projet** :
     ```sh
     make
     ```
-
 4. **Exécuter le programme** :
     ```sh
     ./demo
@@ -49,6 +52,7 @@ Ce projet démontre le rendu d'objets mobiles dans une scène 3D en utilisant Op
 - **m** : Ce met a la place du prédateur
 - **v** : Place la vue sur le centre de notre masse d'étourneaux
 - **c** : Change la couleur de nos étourneaux 
+- **b** : Passe du système "Masse ressort" au système Boids 
 
 ## Structure des fichiers
 

@@ -12,7 +12,7 @@ extern GLfloat _plan_s;
 #define HAUTEUR_SEUIL 7.0f
 #define EPSILON 0.00001f
 #define K_RESSORT 1.5f
-#define MAX_FORCE 0.1f
+#define MAX_FORCE 0.5f
 #define NUM_NEIGHBORS 6
 #define DAMPING 0.99f
 #define ALIGNMENT_WEIGHT 0.5f

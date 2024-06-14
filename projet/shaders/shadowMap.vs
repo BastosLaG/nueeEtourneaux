@@ -8,5 +8,5 @@ layout (location = 1) in vec3 vsiNormal;
 layout (location = 2) in vec2 vsiTexCoord;
 
 void main(void) {
-  gl_Position = lightProjectionMatrix * lightViewMatrix * modelMatrix * vec4(vsiPosition, 1.0);
+  gl_Position = (lightProjectionMatrix/10) * lightViewMatrix * modelMatrix * vec4(vsiPosition, 1.0);
 }
