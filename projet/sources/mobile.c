@@ -76,7 +76,7 @@ int compareDistances(const void *a, const void *b) {
 
 void springInit(int n) {
   int i, j, k;
-  _nb_springs = n * 6; // Each mobile will have 6 springs
+  _nb_springs = n * 6;
   if (_springs) {
     free(_springs);
     _springs = NULL;
@@ -84,10 +84,8 @@ void springInit(int n) {
   _springs = malloc(_nb_springs * sizeof * _springs);
   assert(_springs);
 
-  // Initialize the octree _root node
   _root = createOctreeNode(_width/2, _depth/2, _depth/2, fmaxf(_width, _depth));
 
-  // Insert mobiles into the octree
   for (i = 0; i < _nb_mobiles; i++) {
     insertMobile(_root, i, 0);
   }
@@ -132,7 +130,6 @@ void insertMobile(OctreeNode_t *node, int mobile_index, int depth) {
     if (node->num_mobiles < MAX_OBJECTS || depth == MAX_DEPTH) {
       node->mobiles[node->num_mobiles++] = mobile_index;
     } else {
-      // Subdivide the node
       node->is_leaf = 0;
       for (int i = 0; i < 8; i++) {
         GLfloat newSize = node->size / 2;
@@ -144,7 +141,6 @@ void insertMobile(OctreeNode_t *node, int mobile_index, int depth) {
         );
       }
 
-      // Re-insert mobiles into children
       for (int i = 0; i < node->num_mobiles; i++) {
         int idx = node->mobiles[i];
         insertMobile(node, idx, depth + 1);
@@ -153,7 +149,6 @@ void insertMobile(OctreeNode_t *node, int mobile_index, int depth) {
       insertMobile(node, mobile_index, depth + 1);
     }
   } else {
-    // Insert into appropriate child
     for (int i = 0; i < 8; i++) {
       GLfloat halfSize = node->size / 2;
       if (fabsf(_mobile[mobile_index].x - node->children[i]->x) <= halfSize &&
@@ -313,7 +308,6 @@ static void applySpringForces(void) {
     GLfloat fyB = (dy / distance) * forceB;
     GLfloat fzB = (dz / distance) * forceB;
 
-    // Appliquez la force aux mobiles a et b
     _mobile[a].vx += fxA;
     _mobile[a].vy += fyA;
     _mobile[a].vz += fzA;
@@ -321,7 +315,6 @@ static void applySpringForces(void) {
     _mobile[b].vy -= fyB;
     _mobile[b].vz -= fzB;
   }
-  // printf("test\n"); 
 }
 
 
